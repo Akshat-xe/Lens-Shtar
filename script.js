@@ -132,6 +132,41 @@ if(uploadBox) {
   });
 }
 
+// ========== SUPABASE AUTH (Sign in with Google) ==========
+// Public values (safe to ship). Do NOT put service_role or JWT secret in frontend.
+const SUPABASE_URL = "https://tgmvethwaquialwxenld.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_QVxcf5DEQufi3bdpxlNtYg_aT9kI4o3";
+
+let supabaseClient = null;
+if (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY) {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+const googleSignInBtn = document.getElementById("googleSignInBtn");
+if (googleSignInBtn) {
+  googleSignInBtn.addEventListener("click", async () => {
+    if (!supabaseClient) {
+      alert("Sign-in is not configured yet. Please set your Supabase URL and anon key on the frontend.");
+      return;
+    }
+    try {
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: "https://lens-flow.shtar.space/auth/callback",
+        },
+      });
+      if (error) {
+        console.error("Google sign-in error", error);
+        alert("Unable to start Google sign-in. Please try again.");
+      }
+    } catch (err) {
+      console.error("Unexpected sign-in error", err);
+      alert("Unexpected error during sign-in.");
+    }
+  });
+}
+
 // ========== DATA MOCKS FOR DASHBOARD ==========
 const upiTxns = [
   {name: 'Swiggy/Zomato', subtitle: 'Food Delivery', amt: 8400, icon: '🍔'},
