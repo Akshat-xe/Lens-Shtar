@@ -1,7 +1,8 @@
 (() => {
   const SUPABASE_URL = "https://tgmvethwaquialwxenld.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_QVxcf5DEQufi3bdpxlNtYg_aT9kI4o3";
-  const API_BASE = window.LENS_API_BASE || localStorage.getItem("lens_api_base") || "http://127.0.0.1:8000";
+  // Production backend on Render
+const API_BASE = "https://lens-shtar.onrender.com";
   const CALLBACK_URL = "https://lens-flow.shtar.space/auth/callback";
 
   const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -38,15 +39,24 @@
   }
 
   async function refreshSettingsStatus() {
-    if (!state.session) return null;
+    if (!state.session) {
+      console.log('No session, skipping settings status refresh');
+      return null;
+    }
     try {
+      console.log('Fetching settings status from:', `${API_BASE}/api/settings/status`);
       const res = await fetch(`${API_BASE}/api/settings/status`, {
         headers: { Authorization: `Bearer ${state.session.access_token}` },
       });
-      if (!res.ok) return null;
+      if (!res.ok) {
+        console.error('Settings status fetch failed:', res.status, res.statusText);
+        return null;
+      }
       state.settingsStatus = await res.json();
+      console.log('Settings status:', state.settingsStatus);
       return state.settingsStatus;
-    } catch (_) {
+    } catch (err) {
+      console.error('Settings status fetch error:', err);
       return null;
     }
   }
