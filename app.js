@@ -1,8 +1,8 @@
 (() => {
   const SUPABASE_URL = "https://tgmvethwaquialwxenld.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_QVxcf5DEQufi3bdpxlNtYg_aT9kI4o3";
-  // Production backend on Render
-const API_BASE = "https://lens-shtar.onrender.com";
+  // API base resolved at runtime by api-config.js (loaded before this script)
+  // Priority: ?api_base= query param → localStorage override → localhost default
   const CALLBACK_URL = "https://lens-flow.shtar.space/callback.html";
 
   const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -44,8 +44,8 @@ const API_BASE = "https://lens-shtar.onrender.com";
       return null;
     }
     try {
-      console.log('Fetching settings status from:', `${API_BASE}/api/settings/status`);
-      const res = await fetch(`${API_BASE}/api/settings/status`, {
+      console.log('Fetching settings status from:', `${window.LensConfig.apiBase}/api/settings/status`);
+      const res = await fetch(`${window.LensConfig.apiBase}/api/settings/status`, {
         headers: { Authorization: `Bearer ${state.session.access_token}` },
       });
       if (!res.ok) {
@@ -268,7 +268,7 @@ const API_BASE = "https://lens-shtar.onrender.com";
   }
 
   window.LensApp = {
-    get apiBase() { return API_BASE; },
+    get apiBase() { return (window.LensConfig && window.LensConfig.apiBase) || "http://localhost:8000"; },
     get session() { return state.session; },
     get user() { return state.user; },
     async refreshStatus() { return refreshSettingsStatus(); },

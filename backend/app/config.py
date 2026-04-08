@@ -21,6 +21,8 @@ class Settings:
     supabase_jwt_secret: str
     supabase_jwt_audience: str
     cors_origins: str
+    tunnel_origins: str
+    cors_allow_all: bool
     session_inactivity_seconds: int
     video_placeholder_enabled: bool
     max_upload_bytes: int
@@ -30,8 +32,15 @@ class Settings:
 
     @property
     def cors_origin_list(self) -> list[str]:
-        raw = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
-        return raw or ["http://localhost:3000"]
+        # If CORS_ALLOW_ALL is set (local demo escape hatch), allow any origin.
+        # Use only during demos — never in production.
+        if self.cors_allow_all:
+            return ["*"]
+
+        base = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        tunnel = [o.strip() for o in self.tunnel_origins.split(",") if o.strip()] if self.tunnel_origins else []
+        combined = list(dict.fromkeys(base + tunnel))  # deduplicate, preserve order
+        return combined or ["http://localhost:3000"]
 
 
 @lru_cache
@@ -50,8 +59,16 @@ def get_settings() -> Settings:
         or "authenticated",
         cors_origins=os.getenv(
             "CORS_ORIGINS",
-            "http://localhost:3000,http://127.0.0.1:3000,https://lens-flow.shtar.space,http://localhost:5173,http://127.0.0.1:5173",
+            os.getenv(
+                "ALLOWED_ORIGINS",
+                "http://localhost:3000,http://127.0.0.1:3000,https://lens-flow.shtar.space,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080"
+            )
         ).strip(),
+        # Tunnel-specific origins — set this to your tunnel URL at demo time
+        # Example: TUNNEL_ORIGINS=https://abc123.trycloudflare.com
+        tunnel_origins=os.getenv("TUNNEL_ORIGINS", "").strip(),
+        # Emergency demo escape hatch — set CORS_ALLOW_ALL=true to skip CORS checks entirely
+        cors_allow_all=_env_bool("CORS_ALLOW_ALL", False),
         session_inactivity_seconds=inactive,
         video_placeholder_enabled=_env_bool("VIDEO_PLACEHOLDER_ENABLED", True),
         max_upload_bytes=max_upload,

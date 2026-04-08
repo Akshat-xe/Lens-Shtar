@@ -46,7 +46,13 @@
       }
     } catch (e) {
       console.error('Load status error:', e);
-      setStatus("Failed to check API key status. Backend may be unreachable.", "error");
+      if (e.name === 'TypeError' && e.message.includes('fetch')) {
+        setStatus("Network error: Cannot reach backend. Check CORS configuration.", "error");
+      } else if (e.message && e.message.includes('CORS')) {
+        setStatus("CORS error: Backend not configured for this origin.", "error");
+      } else {
+        setStatus(`Backend error: ${e.message || 'Unknown error'}`, "error");
+      }
     }
   }
 
@@ -88,7 +94,9 @@
     } catch (e) {
       console.error('Save key error:', e);
       if (e.name === 'TypeError' && e.message.includes('fetch')) {
-        setStatus("Backend unreachable. Check if server is running at " + window.LensApp.apiBase, "error");
+        setStatus("Network error: Cannot reach backend. Check CORS configuration.", "error");
+      } else if (e.message && e.message.includes('CORS')) {
+        setStatus("CORS error: Backend not configured for this origin.", "error");
       } else {
         setStatus(e.message || "Save failed", "error");
       }
@@ -126,7 +134,9 @@
     } catch (e) {
       console.error('Clear key error:', e);
       if (e.name === 'TypeError' && e.message.includes('fetch')) {
-        setStatus("Backend unreachable. Check if server is running at " + window.LensApp.apiBase, "error");
+        setStatus("Network error: Cannot reach backend. Check CORS configuration.", "error");
+      } else if (e.message && e.message.includes('CORS')) {
+        setStatus("CORS error: Backend not configured for this origin.", "error");
       } else {
         setStatus(e.message || "Clear failed", "error");
       }

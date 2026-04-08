@@ -1,22 +1,37 @@
 #!/usr/bin/env python3
 """
-Production startup script for Lens Shtar backend on Render.
+Lens Shtar — Local Demo Backend Runner
+=======================================
+Starts the FastAPI backend locally.
+
+Usage:
+    python start.py               # production-style (no reload)
+    RELOAD=true python start.py   # development / demo (auto-reload on file changes)
+    PORT=9000 python start.py     # run on a custom port
 """
 
 import os
 import uvicorn
 
 if __name__ == "__main__":
-    # Render provides PORT environment variable
     port = int(os.environ.get("PORT", 8000))
-    
-    # Start uvicorn with production settings
+    reload = os.environ.get("RELOAD", "false").lower() in ("1", "true", "yes")
+    host = os.environ.get("HOST", "0.0.0.0")
+
+    print(f"\n{'='*54}")
+    print(f"  Lens Shtar Backend — Local Demo")
+    print(f"{'='*54}")
+    print(f"  Listening : http://{host}:{port}")
+    print(f"  Health    : http://localhost:{port}/api/health")
+    print(f"  Reload    : {'enabled' if reload else 'disabled'}")
+    print(f"{'='*54}\n")
+
     uvicorn.run(
         "app.main:app",
-        host="0.0.0.0",
+        host=host,
         port=port,
-        reload=False,  # Production: no auto-reload
-        workers=1,     # Render web service: single worker
+        reload=reload,
+        workers=1,
         access_log=True,
-        log_level="info"
+        log_level="info",
     )
