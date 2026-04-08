@@ -38,8 +38,8 @@ class Settings:
 def get_settings() -> Settings:
     inactive = int(os.getenv("SESSION_INACTIVITY_SECONDS", "2700"))
     inactive = max(60, min(inactive, 86400))
-    max_mb = float(os.getenv("MAX_UPLOAD_MB", "12"))
-    max_upload = int(max(1, min(max_mb, 30)) * 1024 * 1024)
+    max_mb = float(os.getenv("MAX_UPLOAD_MB", "50"))
+    max_upload = int(max(1, min(max_mb, 50)) * 1024 * 1024)
     gemini_timeout = float(os.getenv("GEMINI_TIMEOUT_SECONDS", "120"))
     gemini_timeout = max(30.0, min(gemini_timeout, 300.0))
     return Settings(
@@ -50,7 +50,7 @@ def get_settings() -> Settings:
         or "authenticated",
         cors_origins=os.getenv(
             "CORS_ORIGINS",
-            "http://localhost:3000,http://127.0.0.1:3000",
+            "http://localhost:3000,http://127.0.0.1:3000,https://lens-flow.shtar.space,http://localhost:5173,http://127.0.0.1:5173",
         ).strip(),
         session_inactivity_seconds=inactive,
         video_placeholder_enabled=_env_bool("VIDEO_PLACEHOLDER_ENABLED", True),

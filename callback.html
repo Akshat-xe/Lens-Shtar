@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Signing in… — Lens Shtar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div class="container" style="min-height:100vh;display:flex;align-items:center;justify-content:center">
+    <div class="card" style="max-width:560px;width:100%;text-align:center">
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;margin-bottom:10px">Signing you in…</div>
+      <p style="color:var(--fg-muted);font-size:14px;margin-bottom:18px">Securely finishing Google authentication and preparing your dashboard.</p>
+      <div style="height:6px;background:var(--surface);border-radius:999px;overflow:hidden">
+        <div id="bar" style="height:100%;width:30%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:999px;transition:width .6s ease"></div>
+      </div>
+      <p id="status" style="margin-top:14px;color:var(--fg-muted);font-size:12px">Please wait…</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+  <script>
+    (function () {
+      const SUPABASE_URL = "https://tgmvethwaquialwxenld.supabase.co";
+      const SUPABASE_ANON_KEY = "sb_publishable_QVxcf5DEQufi3bdpxlNtYg_aT9kI4o3";
+      const SESSION_KEY = "ls_supabase_session";
+      const statusEl = document.getElementById('status');
+      const bar = document.getElementById('bar');
+
+      function setStatus(msg, pct) {
+        if (statusEl) statusEl.textContent = msg;
+        if (bar && typeof pct === 'number') bar.style.width = pct + '%';
+      }
+
+      async function run() {
+        if (!window.supabase) {
+          setStatus("Supabase client failed to load. Please refresh.", 40);
+          return;
+        }
+
+        const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        setStatus("Processing callback…", 40);
+
+        // Supabase handles OAuth callback by checking URL hash for access_token
+        // The client automatically processes this when getSession is called
+        const { data, error } = await client.auth.getSession();
+
+        if (error) {
+          console.error("Session error:", error);
+          setStatus("Sign-in failed. Please try again.", 70);
+          setTimeout(() => {
+            window.location.replace("index.html");
+          }, 2000);
+          return;
+        }
+
+        const session = data && data.session;
+        if (!session) {
+          // Try to exchange code if present (PKCE flow)
+          const urlParams = new URLSearchParams(window.location.search);
+          const code = urlParams.get('code');
+          
+          if (code) {
+            setStatus("Exchanging authentication code…", 50);
+            const { data: exchangeData, error: exchangeError } = await client.auth.exchangeCodeForSession(code);
+            if (exchangeError || !exchangeData.session) {
+              console.error("Code exchange failed:", exchangeError);
+              setStatus("Authentication failed. Please try again.", 70);
+              setTimeout(() => {
+                window.location.replace("index.html");
+              }, 2000);
+              return;
+            }
+            // Store the session from code exchange
+            try {
+              localStorage.setItem(SESSION_KEY, JSON.stringify(exchangeData.session));
+            } catch (e) {
+              console.warn("Could not write session to localStorage", e);
+            }
+            setStatus("Redirecting to dashboard…", 100);
+            setTimeout(() => {
+              window.location.replace("dashboard.html");
+            }, 500);
+            return;
+          }
+          
+          setStatus("No session found. Please try signing in again.", 70);
+          setTimeout(() => {
+            window.location.replace("index.html");
+          }, 2000);
+          return;
+        }
+
+        // Store session for static-site usage (access token for backend requests)
+        try {
+          localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        } catch (e) {
+          console.warn("Could not write session to localStorage", e);
+        }
+
+        setStatus("Redirecting to dashboard…", 100);
+        setTimeout(() => {
+          window.location.replace("dashboard.html");
+        }, 500);
+      }
+
+      run();
+    })();
+  </script>
+</body>
+</html>

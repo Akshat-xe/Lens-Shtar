@@ -3,7 +3,7 @@
   const SUPABASE_ANON_KEY = "sb_publishable_QVxcf5DEQufi3bdpxlNtYg_aT9kI4o3";
   // Production backend on Render
 const API_BASE = "https://lens-shtar.onrender.com";
-  const CALLBACK_URL = "https://lens-flow.shtar.space/auth/callback";
+  const CALLBACK_URL = "https://lens-flow.shtar.space/callback.html";
 
   const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
   const SESSION_KEY = "ls_supabase_session";
