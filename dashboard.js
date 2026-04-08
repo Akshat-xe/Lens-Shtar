@@ -94,7 +94,7 @@
 
   async function bootstrap() {
     if (!window.LensApp || !window.LensApp.session) {
-      window.location.href = "index.html";
+      window.LensConfig.navigate("index.html");
       return;
     }
     const data = getData();

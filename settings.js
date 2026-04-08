@@ -14,7 +14,7 @@
 
   async function loadStatus() {
     if (!window.LensApp || !window.LensApp.session) {
-      window.location.href = "index.html";
+      window.LensConfig.navigate("index.html");
       return;
     }
     

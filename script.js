@@ -52,7 +52,7 @@ async function uploadRealFile(file) {
   } catch (e) {
     console.log('API key required, redirecting to settings');
     alert('Please add your Gemini API key in Settings first.');
-    window.location.href = "settings.html?reason=api_key_required";
+    window.LensConfig.navigate("settings.html?reason=api_key_required");
     return;
   }
   
@@ -130,7 +130,7 @@ async function uploadRealFile(file) {
     setUploadState("success");
     
     setTimeout(() => {
-      window.location.href = "dashboard.html";
+      window.LensConfig.navigate("dashboard.html");
     }, 1000);
     
   } catch (err) {
@@ -150,7 +150,7 @@ const dashboardBtn = document.getElementById("dashboardBtn");
 if (dashboardBtn) {
   dashboardBtn.addEventListener("click", () => {
     if (window.LensApp && window.LensApp.session) {
-      window.location.href = "dashboard.html";
+      window.LensConfig.navigate("dashboard.html");
     } else {
       // Redirect to upload section if not authenticated
       document.getElementById("upload").scrollIntoView({ behavior: "smooth" });

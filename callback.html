@@ -20,6 +20,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+  <script src="api-config.js"></script>
   <script>
     (function () {
       const SUPABASE_URL = "https://tgmvethwaquialwxenld.supabase.co";
@@ -50,7 +51,7 @@
           console.error("Session error:", error);
           setStatus("Sign-in failed. Please try again.", 70);
           setTimeout(() => {
-            window.location.replace("index.html");
+            window.LensConfig.navigate("index.html", true);
           }, 2000);
           return;
         }
@@ -68,7 +69,7 @@
               console.error("Code exchange failed:", exchangeError);
               setStatus("Authentication failed. Please try again.", 70);
               setTimeout(() => {
-                window.location.replace("index.html");
+                window.LensConfig.navigate("index.html", true);
               }, 2000);
               return;
             }
@@ -80,14 +81,14 @@
             }
             setStatus("Redirecting to dashboard…", 100);
             setTimeout(() => {
-              window.location.replace("dashboard.html");
+              window.LensConfig.navigate("dashboard.html", true);
             }, 500);
             return;
           }
           
           setStatus("No session found. Please try signing in again.", 70);
           setTimeout(() => {
-            window.location.replace("index.html");
+            window.LensConfig.navigate("index.html", true);
           }, 2000);
           return;
         }
@@ -101,7 +102,7 @@
 
         setStatus("Redirecting to dashboard…", 100);
         setTimeout(() => {
-          window.location.replace("dashboard.html");
+          window.LensConfig.navigate("dashboard.html", true);
         }, 500);
       }
 

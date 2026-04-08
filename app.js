@@ -110,7 +110,7 @@
     state.user = null;
     state.settingsStatus = null;
     if (window.location.pathname.includes("dashboard") || window.location.pathname.includes("settings")) {
-      window.location.href = "index.html";
+      window.LensConfig.navigate("index.html");
     } else {
       renderAuthSlot();
     }
@@ -282,7 +282,7 @@
     async requireApiKey() {
       await refreshSettingsStatus();
       if (!state.settingsStatus || !state.settingsStatus.has_api_key) {
-        window.location.href = "settings.html?reason=api_key_required";
+        window.LensConfig.navigate("settings.html?reason=api_key_required");
         throw new Error("API_KEY_REQUIRED");
       }
       return true;
