@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lens Shtar — Premium AI Financial Intelligence</title>
+<meta name="description" content="AI-powered financial intelligence for precision tracking, money leak detection, and advanced spending analysis."/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<!-- ===================== NAVBAR ===================== -->
+<nav class="navbar" id="navbar">
+  <div class="container nav-container">
+    <a href="index.html" class="nav-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M16 30c7.732 0 14-6.268 14-14S23.732 2 16 2 2 8.268 2 16s6.268 14 14 14Zm0-26a12 12 0 1 0 0 24 12 12 0 0 0 0-24Z" fill="url(#ring-grad)"/>
+          <path d="M12 11v10h5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M21 11h-3.5c-1 0-1.5 .8-1.5 1.5v1.5c0 1 1 1.5 2.5 2 1.5 .5 2.5 1 2.5 2.5v1.5c0 1-.8 1.5-1.5 1.5h-4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="ring-grad" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#ea580c"/>
+              <stop offset="1" stop-color="#3b82f6"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <span>Lens Shtar</span>
+    </a>
+    <div class="nav-links" id="navLinks">
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#personas">Who It's For</a>
+    </div>
+    <div class="nav-actions" id="navActions">
+      <a href="#upload" class="btn btn-outline">Upload Statement</a>
+      <a href="dashboard.html" class="btn btn-primary">Try Dashboard Demo</a>
+    </div>
+    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu" style="display:none;background:none;border:none;flex-direction:column;gap:5px;padding:4px;cursor:pointer">
+      <span style="width:22px;height:2px;background:var(--fg);border-radius:2px;transition:all 0.3s"></span>
+      <span style="width:22px;height:2px;background:var(--fg);border-radius:2px;transition:all 0.3s"></span>
+      <span style="width:22px;height:2px;background:var(--fg);border-radius:2px;transition:all 0.3s"></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ===================== HERO ===================== -->
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-content">
+      <span class="badge badge-blue mb-4">India's Premier Financial Intelligence AI</span>
+      <h1 style="margin-top:12px">Unlock the truth hidden in your <span class="text-primary">transactions.</span></h1>
+      <p>Upload bank statements, PDFs, or CSV files. Lens Shtar automatically categorizes data, detects money leaks, and delivers sophisticated saving strategies in seconds.</p>
+      
+      <div class="hero-cta-row">
+        <a href="#upload" class="btn btn-primary btn-lg">Analyze Statement</a>
+        <a href="dashboard.html" class="btn btn-outline btn-lg">View Demo</a>
+      </div>
+
+      <div class="trust-strip">
+        <div class="trust-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Bank-grade encryption</div>
+        <div class="trust-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> No NetBanking logic needed</div>
+        <div class="trust-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> PDF, CSV, Excel, OFX</div>
+      </div>
+    </div>
+    
+    <div class="hero-preview">
+      <div class="card" style="box-shadow:0 12px 40px rgba(234,88,12,0.15)">
+        <div class="preview-kpi">
+          <div>
+            <div style="font-size:12px;color:var(--fg-muted);font-weight:600">Net Wealth Trajectory</div>
+            <div style="font-family:'Space Grotesk';font-size:24px;font-weight:700">₹1,24,500 <span style="font-size:12px;color:var(--green)">+14.2%</span></div>
+          </div>
+          <svg width="60" height="40" viewBox="0 0 100 40"><path d="M0 35 Q 25 30 50 15 T 100 5" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round"/></svg>
+        </div>
+        
+        <div style="font-size:12px;font-weight:600;margin-bottom:12px">AI Detected Leaks</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--surface);border-radius:6px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="badge badge-red">High</span>
+            <span style="font-size:13px;font-weight:500">Duplicate Zomato Pro</span>
+          </div>
+          <span style="font-family:'Space Grotesk';font-size:13px;color:var(--red);font-weight:700">-₹749/mo</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--surface);border-radius:6px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="badge badge-blue">Low</span>
+            <span style="font-size:13px;font-weight:500">Unused iCloud 2TB</span>
+          </div>
+          <span style="font-family:'Space Grotesk';font-size:13px;color:var(--red);font-weight:700">-₹899/mo</span>
+        </div>
+      </div>
+      
+      <div class="card" style="position:absolute; right:-20px; bottom:-40px; padding:16px; background:hsla(9,9%,4%,0.8); backdrop-filter:blur(10px)">
+        <div style="font-size:11px;font-weight:600;color:var(--fg-muted);margin-bottom:4px">Smart Savings Goal</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px">Emergency Fund</div>
+        <div style="width:160px;height:6px;background:var(--surface);border-radius:3px;overflow:hidden">
+          <div style="width:68%;height:100%;background:var(--green)"></div>
+        </div>
+        <div style="font-size:11px;margin-top:6px;text-align:right">₹3.4L / ₹5.0L</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== VALUE / FEATURES ===================== -->
+<section class="section" id="features" style="background:var(--bg-card);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="container">
+    <div class="section-header">
+      <h2>Financial Intelligence, <span class="text-primary">Demystified.</span></h2>
+      <p>Five powerful models that turn raw statements into actionable financial foresight.</p>
+    </div>
+    <div class="features-grid">
+      <div class="card feature-card">
+        <div class="feature-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20v-4"></path></svg></div>
+        <h3>Deep Categorization</h3>
+        <p style="font-size:14px;color:var(--fg-muted)">Our machine learning model maps messy UPI and POS merchants (e.g. "INF*ZOMATO*BLR") directly into clean, actionable spending categories.</p>
+      </div>
+      <div class="card feature-card">
+        <div class="feature-icon" style="color:var(--red)"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>
+        <h3>Money Leak Detection</h3>
+        <p style="font-size:14px;color:var(--fg-muted)">Instantly flag duplicate subscriptions, ghost charges, rising utility rates, and impulse spending spikes that drain your monthly liquidity.</p>
+      </div>
+      <div class="card feature-card">
+        <div class="feature-icon" style="color:var(--accent)"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></div>
+        <h3>Salary Cycle Analytics</h3>
+        <p style="font-size:14px;color:var(--fg-muted)">Understand Cash Burn velocity between paychecks. Know exactly when your liquidity drops and how to pace variable expenses.</p>
+      </div>
+      <div class="card feature-card">
+        <div class="feature-icon" style="color:var(--green)"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
+        <h3>Smart Saving Directives</h3>
+        <p style="font-size:14px;color:var(--fg-muted)">Receive calculated monthly optimizations. E.g., "Cut food delivery by 18% to save ₹5,400 and hit your Emergency Fund goal 2 months early."</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== HOW IT WORKS ===================== -->
+<section class="section" id="how-it-works">
+  <div class="container">
+    <div class="section-header">
+      <h2>From Raw PDF to <span class="text-primary">Total Clarity</span></h2>
+    </div>
+    <div class="how-grid">
+      <div class="how-step">
+        <div style="font-family:'Space Grotesk';font-size:64px;font-weight:700;color:var(--surface);line-height:1">01</div>
+        <h3 style="margin:16px 0 8px">Import Statements</h3>
+        <p style="font-size:14px;color:var(--fg-muted)">Drop your native bank PDF or CSV. Works smoothly with HDFC, ICICI, SBI, Axis, Kotak, and more.</p>
+      </div>
+      <div class="how-step">
+        <div style="font-family:'Space Grotesk';font-size:64px;font-weight:700;color:var(--surface);line-height:1">02</div>
+        <h3 style="margin:16px 0 8px">AI Parses & Cleans</h3>
+        <p style="font-size:14px;color:var(--fg-muted)">Our engine normalizes merchant names, splits UPI IDs, and tags recurring obligations intelligently.</p>
+      </div>
+      <div class="how-step">
+        <div style="font-family:'Space Grotesk';font-size:64px;font-weight:700;color:var(--primary);line-height:1">03</div>
+        <h3 style="margin:16px 0 8px">Command Your Finances</h3>
+        <p style="font-size:14px;color:var(--fg-muted)">Explore the rich dashboard, plug money leaks, and deploy capital efficiently toward your goals.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== UPLOAD PREVIEW ===================== -->
+<section class="section" id="upload" style="background:var(--bg-card);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="container">
+    <div class="section-header">
+      <h2>Analyze Your <span class="text-primary">Statement</span></h2>
+      <p>Your files never leave your browser for processing. Total privacy, instantaneous analytics.</p>
+    </div>
+    <div class="upload-flow card" id="uploadCard">
+      <!-- IDLE / DRAG STATE -->
+      <div class="upload-state active" id="stateIdle" style="padding:24px 0">
+        <div class="upload-box" id="uploadBox">
+          <svg style="margin:0 auto 16px;color:var(--primary)" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <h3 style="font-size:20px;margin-bottom:8px">Drag & Drop file here</h3>
+          <p style="font-size:13px;color:var(--fg-muted)">Supports Native PDF, CSV, XLS, OFX up to 50MB</p>
+          <button class="btn btn-primary" style="margin-top:24px" onclick="triggerUploadMock()">Browse Files</button>
+        </div>
+        <div class="upload-microcopy">
+          <span style="display:flex;align-items:center;gap:4px"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Secure Upload</span>
+          <span style="display:flex;align-items:center;gap:4px"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg> No NetBanking Info Required</span>
+        </div>
+      </div>
+      
+      <!-- PROCESSING STATE -->
+      <div class="upload-state" id="stateProcessing" style="padding:40px 0;text-align:left">
+        <div style="display:flex;align-items:start;gap:16px">
+          <div style="width:48px;height:48px;background:var(--surface);border-radius:12px;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--primary)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></div>
+          <div style="flex:1">
+            <h3 style="font-size:16px;margin-bottom:4px">hdfc_statement_feb2024.pdf</h3>
+            <p style="font-size:13px;color:var(--fg-muted)" id="mockStatusText">Uploading to local memory bucket...</p>
+            <div class="progress-container"><div class="progress-bar" id="mockProgressBar"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUCCESS STATE -->
+      <div class="upload-state" id="stateSuccess" style="padding:40px 0">
+        <div style="width:64px;height:64px;border-radius:50%;background:var(--green-bg);color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+          <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <h3 style="font-size:20px;margin-bottom:8px">Ready for Intelligence</h3>
+        <p style="font-size:14px;color:var(--fg-muted);margin-bottom:24px">Extracted 241 transactions. Cleaned 45 merchants. Found 3 critical leaks.</p>
+        <a href="dashboard.html" class="btn btn-primary btn-lg">Launch Dashboard</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== WHO IT'S FOR PERSONAS ===================== -->
+<section class="section" id="personas">
+  <div class="container">
+    <div class="section-header">
+      <h2>Who Uses Lens <span class="text-primary">Shtar?</span></h2>
+      <p>Engineered for serious financial tracking across diverse Indian demographics.</p>
+    </div>
+    <div class="personas-grid">
+      <div class="card persona-card">
+        <span class="badge badge-blue">Salaried Professionals</span>
+        <h3>Optimize Monthly Runway</h3>
+        <p>You pull ₹1.5L/mo but wonder where ₹60k went. Lens Shtar tracks your EMIs, separates essential bills from impulse UPI buys, and gives you a clear end-of-month cashburn trajectory.</p>
+      </div>
+      <div class="card persona-card">
+        <span class="badge badge-green">Startup Founders</span>
+        <h3>Monitor Liquidity Bleed</h3>
+        <p>Running a company is messy. Track SaaS subscriptions that shouldn't auto-renew. Ensure emergency personal funds aren't accidentally dissolving into minor overheads.</p>
+      </div>
+      <div class="card persona-card">
+        <span class="badge badge-red">Households & Families</span>
+        <h3>Protect Educational Goals</h3>
+        <p>Combine multiple domestic expense sources. Stop overpaying for recurring broadband/utility rates and smartly route surplus capital directly to children's education funds.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="site-footer">
+  <div class="container footer-top">
+    <div class="footer-brand">
+      <a href="index.html" class="nav-brand" style="margin-bottom:16px">
+        <div class="brand-icon" style="width:24px;height:24px">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M16 30c7.732 0 14-6.268 14-14S23.732 2 16 2 2 8.268 2 16s6.268 14 14 14Zm0-26a12 12 0 1 0 0 24 12 12 0 0 0 0-24Z" fill="url(#ring-grad-b)"/>
+            <path d="M12 11v10h5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M21 11h-3.5c-1 0-1.5 .8-1.5 1.5v1.5c0 1 1 1.5 2.5 2 1.5 .5 2.5 1 2.5 2.5v1.5c0 1-.8 1.5-1.5 1.5h-4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <defs>
+              <linearGradient id="ring-grad-b" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse"><stop stop-color="#ea580c"/><stop offset="1" stop-color="#3b82f6"/></linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span>Lens Shtar</span>
+      </a>
+      <p style="font-size:13px;color:var(--fg-muted)">India's most advanced front-end financial analytics protocol. Zero data storage, maximum intelligence.</p>
+    </div>
+    <div class="footer-links-wrap">
+      <div>
+        <h4 style="font-size:14px;margin-bottom:16px">Platform</h4>
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;color:var(--fg-muted)">
+          <a href="#features">Features</a>
+          <a href="dashboard.html">Demo Dashboard</a>
+          <a href="#upload">Statement Analysis</a>
+        </div>
+      </div>
+      <div>
+        <h4 style="font-size:14px;margin-bottom:16px">Legal & Security</h4>
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;color:var(--fg-muted)">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Data Encryption</a>
+          <a href="#">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container footer-bottom">
+    <span>© 2024 Lens Shtar. Frontend Demo Environment.</span>
+    <span>Local build: Ready for backend</span>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

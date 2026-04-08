@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Lens Shtar</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .dash-layout{display:flex;min-height:100vh}
+    .sidebar{width:260px;background:hsl(0,0%,6%);border-right:1px solid var(--border);padding:24px 16px;position:fixed;inset:0 auto 0 0;overflow-y:auto;z-index:60;transition:transform .28s ease}
+    .sidebar .nav-brand{margin-bottom:28px}
+    .sidebar-nav{display:flex;flex-direction:column;gap:4px}
+    .sidebar-link{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:var(--radius);font-size:14px;color:var(--fg-muted);transition:all .2s;cursor:pointer;border:none;background:none;width:100%;text-align:left;font-family:'Plus Jakarta Sans',sans-serif}
+    .sidebar-link:hover,.sidebar-link.active{background:var(--surface);color:var(--fg)}
+    .sidebar-link.active{color:var(--primary)}
+    .sidebar-section{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--fg-muted);padding:20px 14px 8px;font-weight:600}
+    .dash-main{flex:1;margin-left:260px;padding:clamp(16px,2.6vw,34px);max-width:1760px;width:100%}
+    .dash-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:14px}
+    .dash-header h1{font-size:clamp(24px,3vw,30px);font-weight:700}
+    .dash-header p{font-size:14px;color:var(--fg-muted);margin-top:4px}
+    .header-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .back-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--fg-muted);margin-bottom:12px;transition:color .2s}
+    .back-link:hover{color:var(--fg)}
+    .metrics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px}
+    .metric-card{padding:18px;transition:all .3s}
+    .metric-card:hover{background:hsla(0,0%,100%,0.06)}
+    .metric-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .metric-icon{font-size:18px}
+    .metric-change{font-size:12px;font-weight:600}.metric-change.up{color:var(--green)}.metric-change.down{color:var(--red)}
+    .metric-label{font-size:12px;color:var(--fg-muted);margin-bottom:4px}
+    .metric-val{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,2vw,26px);font-weight:700}
+    .ai-panel{padding:clamp(16px,2vw,24px);margin-bottom:20px}
+    .ai-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+    .ai-icon{width:40px;height:40px;border-radius:12px;background:hsla(217,91%,60%,0.1);display:flex;align-items:center;justify-content:center;font-size:18px}
+    .ai-header h3{font-size:16px;font-weight:600}
+    .ai-header p{font-size:12px;color:var(--fg-muted)}
+    .ai-status{margin-left:auto;font-size:12px;color:var(--green)}
+    .insight-card{display:flex;align-items:start;gap:12px;padding:13px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border);margin-bottom:10px}
+    .insight-dot{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:2px}
+    .insight-dot.warning{background:hsla(24,78%,54%,0.1);color:var(--primary)}.insight-dot.info{background:hsla(217,91%,60%,0.1);color:var(--accent)}
+    .insight-dot.alert{background:hsla(0,72%,51%,0.1);color:var(--red)}.insight-dot.success{background:hsla(142,71%,45%,0.1);color:var(--green)}
+    .insight-card p{font-size:13px;color:var(--fg-muted);line-height:1.55}
+    .charts-grid{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(0,1fr);gap:14px;margin-bottom:20px}
+    .chart-card,.breakdown-card,.panel-card,.tx-card{padding:clamp(16px,2vw,24px)}
+    .chart-card h3,.breakdown-card h3,.tx-card h3{font-size:15px;font-weight:600;margin-bottom:4px}
+    .chart-card .chart-sub,.tx-card .chart-sub{font-size:12px;color:var(--fg-muted);margin-bottom:14px}
+    .chart-wrap{position:relative;height:clamp(220px,34vw,300px)}
+    .donut-wrap{position:relative;height:clamp(180px,24vw,220px);max-width:290px;margin-inline:auto}
+    .legend{margin-top:14px;display:grid;grid-template-columns:1fr;gap:8px}
+    .legend-item{display:flex;align-items:center;justify-content:space-between;font-size:12px;gap:8px}
+    .legend-dot{width:10px;height:10px;border-radius:50%;margin-right:8px}
+    .legend-left{display:flex;align-items:center;color:var(--fg-muted);min-width:0}
+    .legend-left span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .legend-val{font-weight:600}
+    .breakdown-grid,.two-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:20px}
+    .category-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+    .category-row:last-child{border:none}
+    .cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .cat-info{flex:1;min-width:0}.cat-name{font-size:13px;font-weight:500}
+    .cat-bar{height:4px;border-radius:2px;background:var(--surface);margin-top:4px}
+    .cat-bar-fill{height:100%;border-radius:2px}
+    .cat-amount{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600}
+    .cat-pct{font-size:11px;color:var(--fg-muted)}
+    .panel-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+    .panel-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px}
+    .panel-icon.red{background:hsla(0,72%,51%,0.1)}.panel-icon.green{background:hsla(142,71%,45%,0.1)}
+    .leak-card,.save-card{padding:14px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border);margin-bottom:10px;transition:background .2s;cursor:pointer}
+    .leak-card:hover,.save-card:hover{background:hsla(0,0%,100%,0.06)}
+    .leak-top,.save-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .leak-title,.save-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .severity{font-size:10px;padding:2px 8px;border-radius:8px;font-weight:600}
+    .severity.high{background:hsla(0,72%,51%,0.1);color:var(--red)}.severity.medium{background:hsla(24,78%,54%,0.1);color:var(--primary)}.severity.low{background:hsla(217,91%,60%,0.1);color:var(--accent)}
+    .leak-desc,.save-desc{font-size:12px;color:var(--fg-muted);margin-top:6px}
+    .leak-save,.save-impact{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;white-space:nowrap}
+    .leak-save{color:var(--red)}.save-impact{color:var(--green)}
+    .save-badge{font-size:10px;padding:2px 8px;border-radius:8px;background:var(--surface);color:var(--fg-muted)}
+    .tx-row{display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--radius);transition:background .2s}
+    .tx-row:hover{background:hsla(0,0%,100%,0.04)}
+    .tx-avatar{width:36px;height:36px;border-radius:12px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--fg-muted);flex-shrink:0}
+    .tx-info{flex:1;min-width:0}.tx-merchant{font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .tx-meta{font-size:12px;color:var(--fg-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .tx-amount{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700}.tx-amount.positive{color:var(--green)}
+    .mobile-topbar{display:none}
+    .sidebar-backdrop{display:none}
+
+    @media (min-width:835px) and (max-width:1024px){
+      .sidebar{width:220px;padding:20px 12px}
+      .dash-main{margin-left:220px}
+      .metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width:834px){
+      .sidebar{transform:translateX(-100%);box-shadow:8px 0 32px rgba(0,0,0,.6);width:min(82vw,280px)}
+      .sidebar.mobile-active{transform:translateX(0)}
+      .sidebar-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);z-index:55;opacity:0;visibility:hidden;transition:.25s}
+      .sidebar-backdrop.active{opacity:1;visibility:visible}
+      .dash-main{margin-left:0;padding-top:82px}
+      .mobile-topbar{display:flex;align-items:center;justify-content:space-between;position:fixed;top:0;left:0;right:0;height:64px;background:hsla(0,0%,5%,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 16px;z-index:50}
+      .charts-grid,.breakdown-grid,.two-col{grid-template-columns:1fr}
+      .metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .header-actions{width:100%}
+      .header-actions .btn{flex:1}
+      .ai-status{margin-left:0}
+      .legend{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width:428px){
+      .dash-main{padding:12px;padding-top:78px}
+      .metrics-grid{grid-template-columns:1fr}
+      .dash-header{margin-bottom:16px}
+      .header-actions .btn{min-height:42px}
+      .legend{grid-template-columns:1fr}
+      .tx-row{gap:10px;padding:10px 6px}
+      .tx-amount{font-size:13px}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="dash-layout">
+    <!-- MOBILE TOPBAR -->
+    <div class="mobile-topbar" id="dashMobileTopbar">
+      <a href="index.html" class="nav-brand"
+        style="margin:0;display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--fg);">
+        <div class="brand-icon"
+          style="width:28px;height:28px;font-size:14px;border-radius:8px;background:linear-gradient(135deg,var(--primary),var(--primary-glow));display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;">
+          L</div>
+        <span style="font-family:'Space Grotesk',sans-serif;font-size:16px">Lens <strong>Shtar</strong></span>
+      </a>
+      <button class="mobile-menu-btn" id="dashMenuBtn" aria-label="Toggle sidebar"
+        style="display:flex;background:none;border:none;flex-direction:column;gap:5px;padding:4px;cursor:pointer;">
+        <span style="width:22px;height:2px;background:var(--fg);border-radius:2px;transition:all 0.3s"></span>
+        <span style="width:22px;height:2px;background:var(--fg);border-radius:2px;transition:all 0.3s"></span>
+        <span style="width:22px;height:2px;background:var(--fg);border-radius:2px;transition:all 0.3s"></span>
+      </button>
+    </div>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <a href="index.html" class="nav-brand">
+        <div class="brand-icon">L</div>
+        <span>Lens <strong>Shtar</strong></span>
+      </a>
+      <div class="sidebar-section">Analytics</div>
+      <nav class="sidebar-nav">
+        <a href="#overview" class="sidebar-link active">📊 Overview</a>
+        <a href="#insights" class="sidebar-link">🧠 AI Insights</a>
+        <a href="#spending" class="sidebar-link">📈 Spending</a>
+        <a href="#leaks" class="sidebar-link">🔍 Money Leaks</a>
+        <a href="#savings" class="sidebar-link">💡 Savings</a>
+        <a href="#transactions" class="sidebar-link">📋 Transactions</a>
+      </nav>
+      <div class="sidebar-section">Account</div>
+      <nav class="sidebar-nav">
+        <a href="#" class="sidebar-link">⚙️ Settings</a>
+        <a href="#" class="sidebar-link">❓ Help</a>
+      </nav>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="dash-main">
+      <a href="index.html" class="back-link">← Back to home</a>
+      <div class="dash-header" id="overview">
+        <div>
+          <h1>Financial Dashboard</h1>
+          <p>AI-powered analysis of your February 2024 data</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-glass btn-sm">📅 Feb 2024</button>
+          <button class="btn btn-hero btn-sm">Upload New</button>
+        </div>
+      </div>
+
+      <!-- METRICS -->
+      <div class="metrics-grid">
+        <div class="metric-card glass-panel glow-blue">
+          <div class="metric-top"><span class="metric-icon">💰</span><span class="metric-change up">+12.3%</span></div>
+          <div class="metric-label">Total Income</div>
+          <div class="metric-val">$8,420</div>
+        </div>
+        <div class="metric-card glass-panel">
+          <div class="metric-top"><span class="metric-icon">📉</span><span class="metric-change down">+6.1%</span></div>
+          <div class="metric-label">Total Expenses</div>
+          <div class="metric-val">$5,840</div>
+        </div>
+        <div class="metric-card glass-panel glow-orange">
+          <div class="metric-top"><span class="metric-icon">📈</span><span class="metric-change up">+18.4%</span></div>
+          <div class="metric-label">Net Savings</div>
+          <div class="metric-val">$2,580</div>
+        </div>
+        <div class="metric-card glass-panel">
+          <div class="metric-top"><span class="metric-icon">👛</span><span class="metric-change up">+$430</span></div>
+          <div class="metric-label">Cash Flow</div>
+          <div class="metric-val">$2,580</div>
+        </div>
+      </div>
+
+      <!-- AI INSIGHTS -->
+      <div class="ai-panel glass-panel-strong glow-blue" id="insights">
+        <div class="ai-header">
+          <div class="ai-icon">🧠</div>
+          <div>
+            <h3>AI Financial Analyst</h3>
+            <p>Based on your February 2024 data</p>
+          </div>
+          <span class="ai-status">📈 Savings rate improving</span>
+        </div>
+        <div class="insight-card">
+          <div class="insight-dot warning">⚠️</div>
+          <p>Food delivery spending is 34% higher than last month. Consider setting a weekly budget.</p>
+        </div>
+        <div class="insight-card">
+          <div class="insight-dot info">ℹ️</div>
+          <p>Your housing-to-income ratio is 21.4% — healthy and below the 28% threshold.</p>
+        </div>
+        <div class="insight-card">
+          <div class="insight-dot alert">🚨</div>
+          <p>3 duplicate or unused subscriptions detected totaling $74.98/month.</p>
+        </div>
+        <div class="insight-card">
+          <div class="insight-dot success">✅</div>
+          <p>Your savings rate improved to 30.6% this month — up from 24.1% in January.</p>
+        </div>
+        <div class="insight-card">
+          <div class="insight-dot info">ℹ️</div>
+          <p>Transportation costs decreased 12% after switching to hybrid commuting.</p>
+        </div>
+      </div>
+
+      <!-- CHARTS -->
+      <div class="charts-grid" id="spending">
+        <div class="chart-card glass-panel">
+          <h3>Monthly Trend</h3>
+          <p class="chart-sub">Income vs expenses over the past 6 months</p>
+          <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+        </div>
+        <div class="chart-card glass-panel">
+          <h3>Spending Breakdown</h3>
+          <p class="chart-sub">By category</p>
+          <div class="donut-wrap"><canvas id="donutChart"></canvas></div>
+          <div class="legend" id="donutLegend"></div>
+        </div>
+      </div>
+
+      <!-- SPENDING BREAKDOWN -->
+      <div class="breakdown-grid">
+        <div class="breakdown-card glass-panel">
+          <h3>Essential Spending</h3>
+          <div id="essentialList"></div>
+        </div>
+        <div class="breakdown-card glass-panel">
+          <h3>Non-Essential Spending</h3>
+          <div id="nonEssentialList"></div>
+        </div>
+      </div>
+
+      <!-- LEAKS & SAVINGS -->
+      <div class="two-col" id="leaks">
+        <div class="panel-card glass-panel">
+          <div class="panel-header">
+            <div class="panel-icon red">🔍</div>
+            <div>
+              <h3 style="font-size:15px;font-weight:600">Money Leaks</h3>
+              <p style="font-size:12px;color:var(--fg-muted)">AI-detected wasteful spending</p>
+            </div>
+          </div>
+          <div id="leaksList"></div>
+        </div>
+        <div class="panel-card glass-panel" id="savings">
+          <div class="panel-header">
+            <div class="panel-icon green">💡</div>
+            <div>
+              <h3 style="font-size:15px;font-weight:600">Smart Savings</h3>
+              <p style="font-size:12px;color:var(--fg-muted)">AI-generated suggestions</p>
+            </div>
+          </div>
+          <div id="savingsList"></div>
+        </div>
+      </div>
+
+      <!-- TRANSACTIONS -->
+      <div class="tx-card glass-panel" id="transactions">
+        <h3>Recent Transactions</h3>
+        <p class="chart-sub">Latest activity from your accounts</p>
+        <div id="txList"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ========== DATA ==========
+    const categories = [
+      { name: "Housing", amount: 1800, pct: 30.8, color: "hsl(217,91%,60%)", essential: true },
+      { name: "Food & Dining", amount: 920, pct: 15.7, color: "hsl(24,78%,54%)", essential: true },
+      { name: "Transportation", amount: 580, pct: 9.9, color: "hsl(142,71%,45%)", essential: true },
+      { name: "Subscriptions", amount: 340, pct: 5.8, color: "hsl(262,83%,58%)", essential: false },
+      { name: "Shopping", amount: 760, pct: 13.0, color: "hsl(0,72%,51%)", essential: false },
+      { name: "Utilities", amount: 420, pct: 7.2, color: "hsl(190,70%,50%)", essential: true },
+      { name: "Entertainment", amount: 380, pct: 6.5, color: "hsl(45,90%,55%)", essential: false },
+      { name: "Other", amount: 640, pct: 11.0, color: "hsl(0,0%,50%)", essential: false }
+    ];
+    const trend = [
+      { month: "Sep", income: 7800, expenses: 5200 }, { month: "Oct", income: 8100, expenses: 5600 },
+      { month: "Nov", income: 7600, expenses: 6100 }, { month: "Dec", income: 9200, expenses: 7400 },
+      { month: "Jan", income: 8000, expenses: 5500 }, { month: "Feb", income: 8420, expenses: 5840 }
+    ];
+    const leaks = [
+      { title: "Duplicate Streaming Services", desc: "Netflix & Netflix Premium both active — $15.99/mo wasted", save: "$15.99", sev: "high" },
+      { title: "Unused Gym Membership", desc: "No gym visits in 3 months — $49/mo", save: "$49.00", sev: "high" },
+      { title: "Impulse Food Delivery", desc: "18 orders over $30 in February — 40% above average", save: "$120.00", sev: "medium" },
+      { title: "Forgotten Cloud Storage", desc: "Google One 2TB plan unused since November", save: "$9.99", sev: "low" }
+    ];
+    const savings = [
+      { title: "Reduce food delivery by 18%", desc: "Set a weekly $150 cap on delivery orders", impact: "$166/mo", cat: "Food" },
+      { title: "Cancel unused subscriptions", desc: "3 subscriptions with zero usage in 60 days", impact: "$74/mo", cat: "Subscriptions" },
+      { title: "Optimize transport spending", desc: "Switch 2 weekly ride-hails to public transit", impact: "$92/mo", cat: "Transport" },
+      { title: "Move excess cash to savings", desc: "Automate 70% of $2,580 surplus to high-yield savings", impact: "$1,806/mo", cat: "Savings" },
+      { title: "Identify bill spikes", desc: "Electricity bill up 28% — check for rate changes", impact: "$34/mo", cat: "Utilities" }
+    ];
+    const transactions = [
+      { merchant: "Amazon", amount: -89.99, date: "Feb 28", cat: "Shopping" },
+      { merchant: "Uber Eats", amount: -34.50, date: "Feb 27", cat: "Food & Dining" },
+      { merchant: "Salary Deposit", amount: 4210, date: "Feb 25", cat: "Income" },
+      { merchant: "Netflix", amount: -15.99, date: "Feb 24", cat: "Subscriptions" },
+      { merchant: "Shell Gas", amount: -52.40, date: "Feb 23", cat: "Transportation" },
+      { merchant: "Whole Foods", amount: -67.80, date: "Feb 22", cat: "Food & Dining" },
+      { merchant: "Spotify", amount: -9.99, date: "Feb 21", cat: "Subscriptions" },
+      { merchant: "Electric Company", amount: -156, date: "Feb 20", cat: "Utilities" }
+    ];
+
+    // ========== CHARTS ==========
+    Chart.defaults.color = '#888';
+    Chart.defaults.borderColor = 'hsl(0,0%,16%)';
+    const isNarrow = () => window.innerWidth <= 834;
+
+    // Trend
+    new Chart(document.getElementById('trendChart'), {
+      type: 'line',
+      data: {
+        labels: trend.map(t => t.month),
+        datasets: [
+          { label: 'Income', data: trend.map(t => t.income), borderColor: 'hsl(217,91%,60%)', backgroundColor: 'hsla(217,91%,60%,0.1)', fill: true, tension: .4, pointRadius: 3 },
+          { label: 'Expenses', data: trend.map(t => t.expenses), borderColor: 'hsl(24,78%,54%)', backgroundColor: 'hsla(24,78%,54%,0.1)', fill: true, tension: .4, pointRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: isNarrow() ? 'bottom' : 'top',
+            labels: { usePointStyle: true, boxWidth: 8, padding: isNarrow() ? 10 : 16, font: { size: isNarrow() ? 11 : 12 } }
+          }
+        },
+        scales: {
+          y: { ticks: { callback: v => '$' + (v / 1000) + 'k', font: { size: isNarrow() ? 10 : 11 } }, grid: { color: 'hsl(0,0%,14%)' } },
+          x: { ticks: { font: { size: isNarrow() ? 10 : 11 } }, grid: { display: false } }
+        }
+      }
+    });
+
+    // Donut
+    new Chart(document.getElementById('donutChart'), {
+      type: 'doughnut',
+      data: { labels: categories.map(c => c.name), datasets: [{ data: categories.map(c => c.amount), backgroundColor: categories.map(c => c.color), borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false } } }
+    });
+
+    // Legend
+    const legendEl = document.getElementById('donutLegend');
+    categories.forEach(c => {
+      legendEl.innerHTML += `<div class="legend-item"><span class="legend-left"><span class="legend-dot" style="background:${c.color}"></span>${c.name}</span><span class="legend-val">${c.pct}%</span></div>`;
+    });
+
+    // ========== BREAKDOWNS ==========
+    function renderCategories(list, elId) {
+      const el = document.getElementById(elId);
+      const maxAmt = Math.max(...list.map(c => c.amount));
+      list.forEach(c => {
+        el.innerHTML += `<div class="category-row"><span class="cat-dot" style="background:${c.color}"></span><div class="cat-info"><div class="cat-name">${c.name}</div><div class="cat-bar"><div class="cat-bar-fill" style="width:${(c.amount / maxAmt * 100)}%;background:${c.color}"></div></div></div><div style="text-align:right"><div class="cat-amount">$${c.amount.toLocaleString()}</div><div class="cat-pct">${c.pct}%</div></div></div>`;
+      });
+    }
+    renderCategories(categories.filter(c => c.essential), 'essentialList');
+    renderCategories(categories.filter(c => !c.essential), 'nonEssentialList');
+
+    // ========== LEAKS ==========
+    const leaksEl = document.getElementById('leaksList');
+    leaks.forEach(l => {
+      leaksEl.innerHTML += `<div class="leak-card"><div class="leak-top"><span class="leak-title">${l.title} <span class="severity ${l.sev}">${l.sev}</span></span><span class="leak-save">${l.save}</span></div><p class="leak-desc">${l.desc}</p></div>`;
+    });
+
+    // ========== SAVINGS ==========
+    const savEl = document.getElementById('savingsList');
+    savings.forEach(s => {
+      savEl.innerHTML += `<div class="save-card"><div class="save-top"><div><span class="save-title">${s.title} <span class="save-badge">${s.cat}</span></span><p class="save-desc">${s.desc}</p></div><span class="save-impact">${s.impact}</span></div></div>`;
+    });
+
+    // ========== TRANSACTIONS ==========
+    const txEl = document.getElementById('txList');
+    transactions.forEach(t => {
+      const pos = t.amount > 0;
+      txEl.innerHTML += `<div class="tx-row"><div class="tx-avatar">${t.merchant.charAt(0)}</div><div class="tx-info"><div class="tx-merchant">${t.merchant}</div><div class="tx-meta">${t.cat} · ${t.date}</div></div><span class="tx-amount ${pos ? 'positive' : ''}">${pos ? '+' : ''}$${Math.abs(t.amount).toFixed(2)}</span></div>`;
+    });
+
+    // ========== SIDEBAR ACTIVE ==========
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+      link.addEventListener('click', () => {
+        document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        // Close sidebar on mobile after clicking
+        if (window.innerWidth <= 834) {
+          const sb = document.querySelector('.sidebar');
+          const backdrop = document.getElementById('sidebarBackdrop');
+          if (sb) sb.classList.remove('mobile-active');
+          if (backdrop) backdrop.classList.remove('active');
+          document.body.style.overflow = '';
+        }
+      });
+    });
+
+    // ========== MOBILE SIDEBAR TOGGLE ==========
+    const dashMenuBtn = document.getElementById('dashMenuBtn');
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    const toggleSidebar = () => {
+      if (!sidebar) return;
+      const active = sidebar.classList.toggle('mobile-active');
+      if (sidebarBackdrop) sidebarBackdrop.classList.toggle('active', active);
+      document.body.style.overflow = active && window.innerWidth <= 834 ? 'hidden' : '';
+    };
+    const closeSidebar = () => {
+      if (!sidebar) return;
+      sidebar.classList.remove('mobile-active');
+      if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+      document.body.style.overflow = '';
+    };
+    if (dashMenuBtn) {
+      dashMenuBtn.addEventListener('click', () => {
+        toggleSidebar();
+      });
+    }
+    if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
+    window.addEventListener('resize', () => { if (window.innerWidth > 834) closeSidebar(); });
+  </script>
+</body>
+
+</html>
