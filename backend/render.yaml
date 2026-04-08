@@ -1,0 +1,31 @@
+services:
+  # Type: Web Service
+  - type: web
+    name: lens-shtar-api
+    env: python
+    plan: starter  # Free tier to start
+    buildCommand: pip install -r requirements.txt
+    startCommand: python start.py
+    healthCheckPath: /api/health
+    
+    # Environment variables (will be set in Render dashboard)
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.5
+      - key: PORT
+        value: 10000  # Render default port
+    
+    # Auto-deploy on push to main branch
+    autoDeploy: true
+    
+    # Health check configuration
+    healthCheck:
+      path: /api/health
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      
+    # Resource limits
+    resourceLimits:
+      cpu: 0.5
+      memory: 512

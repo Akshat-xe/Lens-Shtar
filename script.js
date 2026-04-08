@@ -33,46 +33,129 @@ function setProcessingText(msg, pct) {
 }
 
 async function uploadRealFile(file) {
-  if (!window.LensApp) return;
-  try {
-    await window.LensApp.requireAuth();
-    await window.LensApp.requireApiKey();
-  } catch (_) {
+  if (!window.LensApp) {
+    alert('Application not ready. Please refresh the page.');
     return;
   }
+  
+  console.log('Starting upload for file:', file.name);
+  
+  try {
+    await window.LensApp.requireAuth();
+  } catch (e) {
+    console.log('Auth required, starting sign in flow');
+    return;
+  }
+  
+  try {
+    await window.LensApp.requireApiKey();
+  } catch (e) {
+    console.log('API key required, redirecting to settings');
+    alert('Please add your Gemini API key in Settings first.');
+    window.location.href = "settings.html?reason=api_key_required";
+    return;
+  }
+  
   const session = window.LensApp.session;
-  if (!session) return;
+  if (!session) {
+    alert('Session lost. Please sign in again.');
+    return;
+  }
 
   setUploadState("processing");
-  setProcessingText("Uploading secure file payload...", 20);
+  setProcessingText("Validating file...", 10);
+  
   try {
+    // File validation
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSize) {
+      throw new Error('File size exceeds 50MB limit');
+    }
+    
+    const allowedTypes = ['application/pdf', 'text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|csv|xls|xlsx)$/i)) {
+      throw new Error('Unsupported file type. Please upload PDF, CSV, XLS, or XLSX files.');
+    }
+    
+    setProcessingText("Uploading secure file payload...", 30);
+    console.log('Uploading to:', `${window.LensApp.apiBase}/api/upload`);
+    
     const fd = new FormData();
     fd.append("file", file);
+    
     const upRes = await fetch(`${window.LensApp.apiBase}/api/upload?include_ai_summary=true`, {
       method: "POST",
       headers: { Authorization: `Bearer ${session.access_token}` },
       body: fd,
     });
+    
+    console.log('Upload response status:', upRes.status);
     const upJson = await upRes.json();
-    if (!upRes.ok) throw new Error(upJson.detail || "Upload failed");
-
-    setProcessingText("Retrieving dashboard insights...", 74);
+    
+    if (!upRes.ok) {
+      console.error('Upload error:', upJson);
+      throw new Error(upJson.detail || `Upload failed with status ${upRes.status}`);
+    }
+    
+    console.log('Upload success:', upJson);
+    
+    setProcessingText("Retrieving dashboard insights...", 70);
     const fileId = upJson.file_id;
     localStorage.setItem("lens_last_file_id", fileId);
+    
     const dashRes = await fetch(`${window.LensApp.apiBase}/api/dashboard/${fileId}`, {
       headers: { Authorization: `Bearer ${session.access_token}` },
     });
+    
+    console.log('Dashboard response status:', dashRes.status);
     const dashJson = await dashRes.json();
-    if (!dashRes.ok) throw new Error(dashJson.detail || "Dashboard fetch failed");
+    
+    if (!dashRes.ok) {
+      console.error('Dashboard error:', dashJson);
+      throw new Error(dashJson.detail || `Dashboard fetch failed with status ${dashRes.status}`);
+    }
+    
+    console.log('Dashboard success:', dashJson);
     localStorage.setItem("lens_last_dashboard", JSON.stringify(dashJson));
+
+    // Update success message with actual data
+    const successMsg = document.getElementById("successMessage");
+    if (successMsg && dashJson.kpis) {
+      const txCount = dashJson.transactions ? dashJson.transactions.length : 0;
+      const leaksCount = dashJson.leaks ? dashJson.leaks.length : 0;
+      successMsg.textContent = `Processed ${txCount} transactions and found ${leaksCount} potential money leaks.`;
+    }
 
     setProcessingText("Analysis complete. Opening dashboard…", 100);
     setUploadState("success");
-    setTimeout(() => (window.location.href = "/dashboard.html"), 650);
+    
+    setTimeout(() => {
+      window.location.href = "dashboard.html";
+    }, 1000);
+    
   } catch (err) {
+    console.error('Upload flow error:', err);
     setUploadState("idle");
-    alert(err.message || "Upload failed.");
+    
+    if (err.name === 'TypeError' && err.message.includes('fetch')) {
+      alert('Backend unreachable. Please check if the server is running at ' + window.LensApp.apiBase);
+    } else {
+      alert(err.message || "Upload failed. Please try again.");
+    }
   }
+}
+
+// Dashboard button handler
+const dashboardBtn = document.getElementById("dashboardBtn");
+if (dashboardBtn) {
+  dashboardBtn.addEventListener("click", () => {
+    if (window.LensApp && window.LensApp.session) {
+      window.location.href = "dashboard.html";
+    } else {
+      // Redirect to upload section if not authenticated
+      document.getElementById("upload").scrollIntoView({ behavior: "smooth" });
+    }
+  });
 }
 
 const uploadInput = document.getElementById("realUploadInput");
