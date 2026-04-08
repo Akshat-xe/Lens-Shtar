@@ -23,12 +23,14 @@ a{color:inherit;text-decoration:none}
 .btn-sm{min-height:34px;padding:6px 14px;font-size:13px}
 .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-hover)}
 .btn-outline{background:transparent;border:1px solid var(--border);color:var(--fg)}.btn-outline:hover{background:var(--surface);border-color:hsla(0,0%,100%,0.2)}
-.navbar{position:fixed;top:0;left:0;right:0;z-index:100;padding:14px 0;background:hsla(9,9%,4%,0.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.navbar{position:fixed;top:0;left:0;right:0;z-index:100;padding:14px 0;background:hsla(9,9%,4%,0.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);transition:transform .28s ease,box-shadow .2s ease}
 .nav-container{display:flex;align-items:center;justify-content:space-between;position:relative;gap:16px}
 .nav-links{display:flex;gap:clamp(14px,2vw,30px)}
 .nav-links a{font-size:14px;color:var(--fg-muted);transition:color .2s;font-weight:500}
 .nav-links a:hover{color:var(--fg)}
 .nav-actions{display:flex;gap:10px;align-items:center}
+#authActionSlot{position:relative}
+#authActionSlot .btn{min-height:40px}
 .hero{padding:clamp(108px,12vw,140px) 0 clamp(52px,8vw,88px);position:relative}
 .hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(18px,4vw,44px);align-items:center}
 .hero h1{font-size:clamp(31px,6vw,58px);font-weight:700;margin-bottom:18px;letter-spacing:-1px;text-wrap:balance}

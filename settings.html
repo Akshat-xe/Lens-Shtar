@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Settings — Lens Shtar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <nav class="navbar" id="navbar">
+    <div class="container nav-container">
+      <a href="index.html" class="nav-brand"><div class="brand-icon">L</div><span>Lens Shtar</span></a>
+      <div class="nav-links"><a href="/dashboard.html">Dashboard</a><a href="/index.html#upload">Upload</a></div>
+      <div class="nav-actions" id="navActions"><div id="authActionSlot"></div></div>
+    </div>
+  </nav>
+
+  <main class="section" style="padding-top:110px">
+    <div class="container" style="max-width:980px">
+      <div class="card" style="margin-bottom:16px">
+        <h1 style="font-size:28px;margin-bottom:8px">Settings</h1>
+        <p style="color:var(--fg-muted);font-size:14px">Manage your Lens Shtar account session and Gemini API access.</p>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <h2 style="font-size:18px;margin-bottom:10px">Account</h2>
+        <div id="accountSummary" style="font-size:14px;color:var(--fg-muted)">Loading account…</div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <h2 style="font-size:18px;margin-bottom:10px">Gemini API Key</h2>
+        <p style="font-size:13px;color:var(--fg-muted);margin-bottom:12px">This key is stored only in server memory for your active session. It is never saved to database or disk.</p>
+        <input id="geminiKeyInput" type="password" placeholder="AIza..." style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--fg);padding:12px 14px;border-radius:8px;outline:none"/>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+          <button id="saveKeyBtn" class="btn btn-primary" type="button">Save Key</button>
+          <button id="clearKeyBtn" class="btn btn-outline" type="button">Clear Key</button>
+        </div>
+        <p id="keyStatusText" style="margin-top:10px;font-size:13px;color:var(--fg-muted)">Checking status…</p>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <h2 style="font-size:18px;margin-bottom:10px">Session Status</h2>
+        <div id="sessionStatus" style="font-size:13px;color:var(--fg-muted)">Checking session…</div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <h2 style="font-size:18px;margin-bottom:10px">Help / Setup</h2>
+        <ul style="padding-left:18px;color:var(--fg-muted);font-size:13px;display:grid;gap:6px">
+          <li>Sign in with Google first.</li>
+          <li>Add your own Gemini API key to enable PDF analysis.</li>
+          <li>Upload PDF/CSV/XLS/XLSX from the home page.</li>
+          <li>If session expires, sign in again and re-save your key.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size:18px;margin-bottom:10px">How to get your Gemini API key</h2>
+        <p style="font-size:13px;color:var(--fg-muted);margin-bottom:14px">Video placeholder: add your setup tutorial here later.</p>
+        <div style="height:220px;border-radius:10px;border:1px dashed var(--border);background:linear-gradient(135deg,hsla(24,85%,50%,0.08),hsla(217,90%,60%,0.08));display:flex;align-items:center;justify-content:center;color:var(--fg-muted);font-size:13px">
+          Tutorial video placeholder
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+  <script src="app.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>
+

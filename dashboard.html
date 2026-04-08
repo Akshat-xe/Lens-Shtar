@@ -155,7 +155,7 @@
       </nav>
       <div class="sidebar-section">Account</div>
       <nav class="sidebar-nav">
-        <a href="#" class="sidebar-link">⚙️ Settings</a>
+        <a href="/settings.html" class="sidebar-link">⚙️ Settings</a>
         <a href="#" class="sidebar-link">❓ Help</a>
       </nav>
     </aside>
@@ -166,11 +166,12 @@
       <div class="dash-header" id="overview">
         <div>
           <h1>Financial Dashboard</h1>
-          <p>AI-powered analysis of your February 2024 data</p>
+          <p id="dashboardSubtitle">AI-powered analysis of your latest uploaded file</p>
         </div>
         <div class="header-actions">
-          <button class="btn btn-glass btn-sm">📅 Feb 2024</button>
-          <button class="btn btn-hero btn-sm">Upload New</button>
+          <a class="btn btn-outline btn-sm" href="/settings.html">Settings</a>
+          <a class="btn btn-primary btn-sm" href="/index.html#upload">Upload New</a>
+          <div id="authActionSlot"></div>
         </div>
       </div>
 
@@ -290,9 +291,12 @@
     </main>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+  <script src="app.js"></script>
+  <script src="dashboard.js"></script>
   <script>
     // ========== DATA ==========
-    const categories = [
+    const categoriesDemo = [
       { name: "Housing", amount: 1800, pct: 30.8, color: "hsl(217,91%,60%)", essential: true },
       { name: "Food & Dining", amount: 920, pct: 15.7, color: "hsl(24,78%,54%)", essential: true },
       { name: "Transportation", amount: 580, pct: 9.9, color: "hsl(142,71%,45%)", essential: true },
@@ -302,25 +306,25 @@
       { name: "Entertainment", amount: 380, pct: 6.5, color: "hsl(45,90%,55%)", essential: false },
       { name: "Other", amount: 640, pct: 11.0, color: "hsl(0,0%,50%)", essential: false }
     ];
-    const trend = [
+    const trendDemo = [
       { month: "Sep", income: 7800, expenses: 5200 }, { month: "Oct", income: 8100, expenses: 5600 },
       { month: "Nov", income: 7600, expenses: 6100 }, { month: "Dec", income: 9200, expenses: 7400 },
       { month: "Jan", income: 8000, expenses: 5500 }, { month: "Feb", income: 8420, expenses: 5840 }
     ];
-    const leaks = [
+    const leaksDemo = [
       { title: "Duplicate Streaming Services", desc: "Netflix & Netflix Premium both active — $15.99/mo wasted", save: "$15.99", sev: "high" },
       { title: "Unused Gym Membership", desc: "No gym visits in 3 months — $49/mo", save: "$49.00", sev: "high" },
       { title: "Impulse Food Delivery", desc: "18 orders over $30 in February — 40% above average", save: "$120.00", sev: "medium" },
       { title: "Forgotten Cloud Storage", desc: "Google One 2TB plan unused since November", save: "$9.99", sev: "low" }
     ];
-    const savings = [
+    const savingsDemo = [
       { title: "Reduce food delivery by 18%", desc: "Set a weekly $150 cap on delivery orders", impact: "$166/mo", cat: "Food" },
       { title: "Cancel unused subscriptions", desc: "3 subscriptions with zero usage in 60 days", impact: "$74/mo", cat: "Subscriptions" },
       { title: "Optimize transport spending", desc: "Switch 2 weekly ride-hails to public transit", impact: "$92/mo", cat: "Transport" },
       { title: "Move excess cash to savings", desc: "Automate 70% of $2,580 surplus to high-yield savings", impact: "$1,806/mo", cat: "Savings" },
       { title: "Identify bill spikes", desc: "Electricity bill up 28% — check for rate changes", impact: "$34/mo", cat: "Utilities" }
     ];
-    const transactions = [
+    const transactionsDemo = [
       { merchant: "Amazon", amount: -89.99, date: "Feb 28", cat: "Shopping" },
       { merchant: "Uber Eats", amount: -34.50, date: "Feb 27", cat: "Food & Dining" },
       { merchant: "Salary Deposit", amount: 4210, date: "Feb 25", cat: "Income" },
@@ -340,10 +344,10 @@
     new Chart(document.getElementById('trendChart'), {
       type: 'line',
       data: {
-        labels: trend.map(t => t.month),
+        labels: trendDemo.map(t => t.month),
         datasets: [
-          { label: 'Income', data: trend.map(t => t.income), borderColor: 'hsl(217,91%,60%)', backgroundColor: 'hsla(217,91%,60%,0.1)', fill: true, tension: .4, pointRadius: 3 },
-          { label: 'Expenses', data: trend.map(t => t.expenses), borderColor: 'hsl(24,78%,54%)', backgroundColor: 'hsla(24,78%,54%,0.1)', fill: true, tension: .4, pointRadius: 3 }
+          { label: 'Income', data: trendDemo.map(t => t.income), borderColor: 'hsl(217,91%,60%)', backgroundColor: 'hsla(217,91%,60%,0.1)', fill: true, tension: .4, pointRadius: 3 },
+          { label: 'Expenses', data: trendDemo.map(t => t.expenses), borderColor: 'hsl(24,78%,54%)', backgroundColor: 'hsla(24,78%,54%,0.1)', fill: true, tension: .4, pointRadius: 3 }
         ]
       },
       options: {
@@ -365,13 +369,13 @@
     // Donut
     new Chart(document.getElementById('donutChart'), {
       type: 'doughnut',
-      data: { labels: categories.map(c => c.name), datasets: [{ data: categories.map(c => c.amount), backgroundColor: categories.map(c => c.color), borderWidth: 0 }] },
+      data: { labels: categoriesDemo.map(c => c.name), datasets: [{ data: categoriesDemo.map(c => c.amount), backgroundColor: categoriesDemo.map(c => c.color), borderWidth: 0 }] },
       options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false } } }
     });
 
     // Legend
     const legendEl = document.getElementById('donutLegend');
-    categories.forEach(c => {
+    categoriesDemo.forEach(c => {
       legendEl.innerHTML += `<div class="legend-item"><span class="legend-left"><span class="legend-dot" style="background:${c.color}"></span>${c.name}</span><span class="legend-val">${c.pct}%</span></div>`;
     });
 
@@ -383,24 +387,24 @@
         el.innerHTML += `<div class="category-row"><span class="cat-dot" style="background:${c.color}"></span><div class="cat-info"><div class="cat-name">${c.name}</div><div class="cat-bar"><div class="cat-bar-fill" style="width:${(c.amount / maxAmt * 100)}%;background:${c.color}"></div></div></div><div style="text-align:right"><div class="cat-amount">$${c.amount.toLocaleString()}</div><div class="cat-pct">${c.pct}%</div></div></div>`;
       });
     }
-    renderCategories(categories.filter(c => c.essential), 'essentialList');
-    renderCategories(categories.filter(c => !c.essential), 'nonEssentialList');
+    renderCategories(categoriesDemo.filter(c => c.essential), 'essentialList');
+    renderCategories(categoriesDemo.filter(c => !c.essential), 'nonEssentialList');
 
     // ========== LEAKS ==========
     const leaksEl = document.getElementById('leaksList');
-    leaks.forEach(l => {
+    leaksDemo.forEach(l => {
       leaksEl.innerHTML += `<div class="leak-card"><div class="leak-top"><span class="leak-title">${l.title} <span class="severity ${l.sev}">${l.sev}</span></span><span class="leak-save">${l.save}</span></div><p class="leak-desc">${l.desc}</p></div>`;
     });
 
     // ========== SAVINGS ==========
     const savEl = document.getElementById('savingsList');
-    savings.forEach(s => {
+    savingsDemo.forEach(s => {
       savEl.innerHTML += `<div class="save-card"><div class="save-top"><div><span class="save-title">${s.title} <span class="save-badge">${s.cat}</span></span><p class="save-desc">${s.desc}</p></div><span class="save-impact">${s.impact}</span></div></div>`;
     });
 
     // ========== TRANSACTIONS ==========
     const txEl = document.getElementById('txList');
-    transactions.forEach(t => {
+    transactionsDemo.forEach(t => {
       const pos = t.amount > 0;
       txEl.innerHTML += `<div class="tx-row"><div class="tx-avatar">${t.merchant.charAt(0)}</div><div class="tx-info"><div class="tx-merchant">${t.merchant}</div><div class="tx-meta">${t.cat} · ${t.date}</div></div><span class="tx-amount ${pos ? 'positive' : ''}">${pos ? '+' : ''}$${Math.abs(t.amount).toFixed(2)}</span></div>`;
     });
