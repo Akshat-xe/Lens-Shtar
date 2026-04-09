@@ -174,6 +174,27 @@ def run_financial_engine(
     payment_method_count: Counter = Counter()
     merchant_spend: dict[str, Decimal] = defaultdict(lambda: Decimal("0.00"))
 
+    # ── RULE ENGINE PRE-PASS: Mathematical flow verification ──
+    # If standard running balances exist, they dictate absolute flow (debit vs credit).
+    dates = [t["date"] for t in transactions if t.get("date")]
+    direction_is_forward = True
+    if len(dates) >= 2 and dates[0] > dates[-1]:
+        direction_is_forward = False  # Reverse-chronological PDF
+
+    seq = transactions if direction_is_forward else list(reversed(transactions))
+    prev_bal = None
+    for t in seq:
+        raw_bal = t.get("balance_after")
+        if raw_bal is not None:
+            bal = _d(raw_bal)
+            amt = _d(t.get("amount", 0))
+            if prev_bal is not None and amt > Decimal("0.00"):
+                delta = bal - prev_bal
+                # If mathematically exact, override AI's flow label
+                if abs(abs(delta) - amt) <= Decimal("0.01"):
+                    t["flow"] = "credit" if delta > 0 else "debit"
+            prev_bal = bal
+
     for t in transactions:
         amt = _d(t["amount"])
         blob = f"{t['merchant_clean']} {t.get('description', '')}".lower()

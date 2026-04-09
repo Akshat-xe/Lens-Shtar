@@ -62,6 +62,7 @@ Return ONLY one valid JSON object — no markdown, no explanations, no truncatio
       "date": "YYYY-MM-DD",
       "amount": 0.00,
       "flow": "debit | credit",
+      "balance_after": null,
       "merchant_raw": "verbatim text from statement",
       "merchant_clean": "human-readable name",
       "category": "Food & Dining | Housing | Transportation | Shopping | Subscriptions | Utilities | Entertainment | Health & Wellness | Income | Transfers | EMIs | Insurance | Investments | Education | Cash & ATM | Other",
@@ -76,15 +77,10 @@ Return ONLY one valid JSON object — no markdown, no explanations, no truncatio
     }
   ],
   "stress_indicators": {
-    "overdraft_events": 0,
-    "bounced_transactions": 0,
-    "late_payment_fees": 0,
-    "micro_borrowing_count": 0,
-    "notes": null
+    "notes": "human-readable summary of financial friction or stress events if any"
   },
   "behavioral_insights": {
     "post_payday_splurge": false,
-    "cash_reliance_pct": 0.0,
     "top_vendors": [],
     "spending_pattern": null
   }
@@ -102,13 +98,17 @@ BALANCES (reconciliation anchors):
 - Extract statement_total_credit and statement_total_debit from the statement summary row if present.
 - If a value isn't printed, use null. Never invent balances.
 
-TRANSACTIONS — accuracy mandate:
-- Extract EVERY SINGLE transaction — do not skip any, even repeats on same date.
-- Multi-line entries: merge all lines of one transaction into one JSON object.
-- amount is ALWAYS a positive decimal. flow:"credit" = money IN, flow:"debit" = money OUT.
-- NEVER round amounts — use exact values (e.g., 1234.56, not 1235).
-- For identical-looking entries on same date: keep all (different times/refs = different transactions).
-- No duplicate suppression — include all rows from the statement.
+TRANSACTIONS — accuracy mandate (NO COMPRESSION ALLOWED):
+- Extract EVERY SINGLE transaction row EXACTLY as it appears. 
+- DO NOT GROUP OR SUM identical-looking entries. If there are three ₹10.80 charges on the same day, output THREE separate identical json objects!
+- Multi-line description entries: merge all lines of one transaction into one JSON object.
+- amount is ALWAYS a positive decimal. NEVER round amounts (use exact 1234.56, not 1235).
+- balance_after: Look at the running balance column for that row. Use it if available, else null.
+
+CRITICAL FLOW RULE (Debit vs Credit Absolute Rule):
+- `flow` must be exactly 'credit' (money in / deposit) or 'debit' (money out / withdrawal).
+- DO NOT GUESS BASED ON VAGUE WORDS.
+- Look at the RUNNING BALANCE col: If the balance INCREASES after the transaction, it is ALWAYS a CREDIT. If the balance DECREASES, it is ALWAYS a DEBIT. This mathematical rule overrides everything!
 
 CATEGORY CLASSIFICATION — strict mapping:
 - Salary, pension, business credits → "Income"
@@ -303,7 +303,7 @@ async def generate_ai_summary(
     url_template = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     body: dict[str, Any] = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generation_config": {"temperature": 0.3, "max_output_tokens": 600},
+        "generation_config": {"temperature": 0.3, "max_output_tokens": 800},
     }
 
     class _LimitedTimeout:
@@ -314,18 +314,42 @@ async def generate_ai_summary(
         def __getattr__(self, n: str):
             return getattr(self._s, n)
 
-    r, _ = await _gemini_post_with_retry(
-        url_template, api_key, body, settings.gemini_model,
-        _LimitedTimeout(settings),  # type: ignore[arg-type]
-        "summary",
-    )
-    if r.status_code != 200:
-        code, msg = _map_gemini_error(r.status_code, r.text)
-        raise GeminiHttpError(r.status_code if r.status_code in (401, 403, 429) else 502, msg)
-    try:
-        return str(r.json()["candidates"][0]["content"]["parts"][0]["text"]).strip()
-    except Exception as e:
-        raise GeminiHttpError(502, "Could not read Gemini summary.") from e
+    # DUAL-MODEL UPGRADE: Try gemini-2.5-pro first for best qualitative logic, then fallback to user's setting
+    primary_model = "gemini-2.5-pro"
+    models_to_try = [primary_model]
+    if settings.gemini_model != primary_model:
+        models_to_try.append(settings.gemini_model)
+    if FALLBACK_MODEL not in models_to_try:
+        models_to_try.append(FALLBACK_MODEL)
+
+    last_response: httpx.Response | None = None
+    settings_override = _LimitedTimeout(settings)
+
+    for model in models_to_try:
+        url = url_template.format(model=model)
+        print(f"[gemini] summary: model={model}")
+        
+        async with httpx.AsyncClient(timeout=settings_override.gemini_timeout_seconds) as client:
+            r = await client.post(url, params={"key": api_key}, json=body)
+            if r.status_code == 200:
+                print(f"[gemini] summary: ✓ {model}")
+                try:
+                    return str(r.json()["candidates"][0]["content"]["parts"][0]["text"]).strip()
+                except Exception as e:
+                    raise GeminiHttpError(502, "Could not read Gemini summary.") from e
+            elif r.status_code in (429, 503):
+                print(f"[gemini] summary: {r.status_code} on {model} → trying fallback")
+                last_response = r
+                continue
+            else:
+                last_response = r
+                break
+                
+    if last_response is not None:
+        code, msg = _map_gemini_error(last_response.status_code, last_response.text)
+        raise GeminiHttpError(last_response.status_code if last_response.status_code in (401, 403, 429) else 502, msg)
+        
+    raise GeminiHttpError(502, "Summary generation failed across all models.")
 
 
 class GeminiHttpError(Exception):
