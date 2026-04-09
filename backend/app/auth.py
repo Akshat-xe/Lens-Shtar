@@ -17,8 +17,12 @@ def verify_supabase_jwt(token: str, settings: Settings) -> SupabaseUser:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Server misconfigured: SUPABASE_JWT_SECRET is not set",
         )
+    unverified_header = jwt.get_unverified_header(token)
+    alg = unverified_header.get("alg", "HS256")
+    print(f"Token header alg is: {alg}")
+
     decode_kw: dict = {
-        "algorithms": ["HS256"],
+        "algorithms": ["HS256", alg],
         "options": {"require": ["exp", "sub"]},
         "leeway": 10,
     }
