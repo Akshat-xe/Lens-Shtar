@@ -115,8 +115,14 @@ def normalize_transaction_row(row: dict[str, Any]) -> NormalizedTransaction | No
     merchant_clean = str(row.get("merchant_clean") or merchant_raw or "Unknown")[:500]
     merchant_clean = _clean_merchant(merchant_clean)
     description = _clean_merchant(str(row.get("description") or merchant_raw or "")[:500])
-    category = str(row.get("category") or row.get("category_suggestion") or "Other").strip() or "Other"
-    sub_category = str(row.get("sub_category") or "").strip()
+    category_ai = str(row.get("category") or row.get("category_suggestion") or "Other").strip() or "Other"
+    sub_category_ai = str(row.get("sub_category") or "").strip()
+    
+    from app.analysis.classification import apply_classification_overrides
+    merchant_clean, category, sub_category = apply_classification_overrides(
+        merchant_raw, merchant_clean, category_ai, sub_category_ai
+    )
+    
     payment = str(row.get("payment_method") or "").strip()
     if not payment:
         payment = _infer_payment_method(merchant_clean, description)
@@ -125,6 +131,7 @@ def normalize_transaction_row(row: dict[str, Any]) -> NormalizedTransaction | No
         date=date_s,
         amount=float(amount),
         flow=flow,  # type: ignore[arg-type]
+        balance_after=_to_amount(row.get("balance_after")) if row.get("balance_after") is not None else None,
         merchant_raw=merchant_raw or merchant_clean,
         merchant_clean=merchant_clean,
         category=category[:80],
@@ -139,27 +146,13 @@ def normalize_transaction_row(row: dict[str, Any]) -> NormalizedTransaction | No
     )
 
 
-def fingerprint(tx: NormalizedTransaction) -> str:
-    base = f"{tx['date']}|{round(tx['amount'], 2)}|{tx['flow']}|{tx['merchant_clean'].lower()}"
-    return hashlib.sha256(base.encode()).hexdigest()[:32]
-
-
-def dedupe_transactions(txns: list[NormalizedTransaction]) -> list[NormalizedTransaction]:
-    seen: set[str] = set()
-    out: list[NormalizedTransaction] = []
-    for t in sorted(txns, key=lambda x: (x["date"], x["merchant_clean"])):
-        fp = fingerprint(t)
-        if fp in seen:
-            continue
-        seen.add(fp)
-        out.append(t)
-    return out
-
-
 def validate_and_normalize(raw_rows: list[dict[str, Any]]) -> list[NormalizedTransaction]:
     parsed: list[NormalizedTransaction] = []
     for r in raw_rows:
         n = normalize_transaction_row(r)
         if n:
             parsed.append(n)
-    return dedupe_transactions(parsed)
+    
+    # We DO NOT arbitrarily deduplicate identical transactions on the same day anymore.
+    # If the LLM saw multiple identical charges, we retain them.
+    return parsed

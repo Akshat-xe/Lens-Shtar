@@ -81,10 +81,11 @@ def run_reconciliation(
     computed_credits: Decimal,
     computed_debits: Decimal,
     balances: dict[str, Any],
+    flow_overrides: int = 0,
 ) -> dict[str, Any]:
     """
     Validate computed totals against statement-printed figures.
-    Returns reconciliation result with confidence and mismatch details.
+    Outputs a strict 0-100 Data Trust Score + Explainable AI (XAI) trust log.
     """
     stmt_credit = _d(balances.get("statement_total_credit"))
     stmt_debit = _d(balances.get("statement_total_debit"))
@@ -93,10 +94,15 @@ def run_reconciliation(
 
     issues: list[str] = []
     checks: list[dict[str, Any]] = []
+    trust_score = 100
+    trust_log: list[str] = ["Base score: 100/100 (Perfect ledger structural baseline)."]
 
     def _check(label: str, computed: Decimal, expected: Decimal | None, unit: str = ""):
+        nonlocal trust_score
         if expected is None or expected == Decimal("0.00"):
             checks.append({"label": label, "status": "skipped", "reason": "not in statement"})
+            trust_score -= 10
+            trust_log.append(f"Penalty -10: {label} anchor missing from extracted statement summary.")
             return True
         diff = abs(computed - expected)
         ok = diff <= RECON_TOLERANCE
@@ -108,7 +114,12 @@ def run_reconciliation(
             "status": "matched" if ok else "mismatch",
         })
         if not ok:
+            penalty = 20 if label != "Balance Progression" else 30
+            trust_score -= penalty
             issues.append(f"{label}: computed {unit}{float(computed):,.2f} vs statement {unit}{float(expected):,.2f} (Δ{float(diff):,.2f})")
+            trust_log.append(f"Penalty -{penalty}: {label} mismatch (Δ{float(diff):,.2f}). Computed values do not match source of truth.")
+        else:
+            trust_log.append(f"Verification +0: {label} perfectly matches statement figures.")
         return ok
 
     credit_ok = _check("Total Money In", computed_credits, stmt_credit if stmt_credit else None)
@@ -128,21 +139,37 @@ def run_reconciliation(
             "status": "matched" if balance_ok else "mismatch",
         })
         if not balance_ok:
+            trust_score -= 30
             issues.append(f"Balance: {float(opening):,.2f} + credits - debits = {float(expected_closing):,.2f}, but statement closing is {float(closing):,.2f}")
+            trust_log.append(f"Penalty -30: Net progression invalid. Check for missing or duplicate transactions.")
+        else:
+            trust_log.append("Verification +0: Running balance progression is mathematically intact.")
+    else:
+        trust_score -= 15
+        trust_log.append("Penalty -15: Could not verify full balance progression due to missing opening/closing anchors.")
 
+    # ── Override Penalties ──
+    if flow_overrides > 0:
+        penalty = min(flow_overrides * 5, 25)
+        trust_score -= penalty
+        trust_log.append(f"Penalty -{penalty}: Rule Engine forcefully flipped debit/credit signs on {flow_overrides} transactions across the sequence.")
+
+    trust_score = max(0, trust_score)
     all_ok = credit_ok and debit_ok and balance_ok
-    # Confidence: all matched + balances present = High; some skipped = Medium; mismatch = Low
     has_statement_data = any(c["status"] != "skipped" for c in checks)
-    if all_ok and has_statement_data:
+    
+    if trust_score >= 90:
         confidence = "High"
-    elif all_ok and not has_statement_data:
+    elif trust_score >= 60:
         confidence = "Medium"
     else:
         confidence = "Low"
 
     return {
-        "status": "verified" if all_ok else "mismatch",
+        "status": "verified" if (all_ok and has_statement_data) else "mismatch",
         "confidence": confidence,
+        "trust_score": trust_score,
+        "trust_log": trust_log,
         "checks": checks,
         "issues": issues,
         "opening_balance": float(opening) if opening else None,
@@ -183,6 +210,7 @@ def run_financial_engine(
 
     seq = transactions if direction_is_forward else list(reversed(transactions))
     prev_bal = None
+    flow_overrides = 0
     for t in seq:
         raw_bal = t.get("balance_after")
         if raw_bal is not None:
@@ -192,7 +220,10 @@ def run_financial_engine(
                 delta = bal - prev_bal
                 # If mathematically exact, override AI's flow label
                 if abs(abs(delta) - amt) <= Decimal("0.01"):
-                    t["flow"] = "credit" if delta > 0 else "debit"
+                    correct_flow = "credit" if delta > 0 else "debit"
+                    if t.get("flow") != correct_flow:
+                        t["flow"] = correct_flow
+                        flow_overrides += 1
             prev_bal = bal
 
     for t in transactions:
@@ -225,6 +256,9 @@ def run_financial_engine(
                 emi_total += amt
 
             merchant_spend[t["merchant_clean"].lower()[:80]] += amt
+
+    from app.analysis.leaks import compute_behavioral_analytics
+    computed_behavioral = compute_behavioral_analytics(transactions, float(income), float(expenses))
 
     # Precise savings — strict: income - expenses (no approximation)
     savings = income - expenses
@@ -305,7 +339,7 @@ def run_financial_engine(
 
     # Reconciliation
     balances = meta.get("balances") or {}
-    reconciliation = run_reconciliation(income, expenses, balances)
+    reconciliation = run_reconciliation(income, expenses, balances, flow_overrides=flow_overrides)
 
     # KPIs — exact Decimal→float conversion at the very end
     kpis = {
@@ -351,7 +385,7 @@ def run_financial_engine(
         "profile":             meta.get("profile") or {},
         "income_profile":      meta.get("income_profile") or {},
         "stress_indicators":   meta.get("stress_indicators") or {},
-        "behavioral_insights": meta.get("behavioral_insights") or {},
+        "behavioral_insights": {**(meta.get("behavioral_insights") or {}), **computed_behavioral},
     }
 
 

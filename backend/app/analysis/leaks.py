@@ -6,12 +6,47 @@ from typing import Any
 
 from app.analysis.models import NormalizedTransaction
 
+import statistics
+
 _SUBSCRIPTION = re.compile(
     r"netflix|spotify|prime|youtube|apple|google\s*one|dropbox|notion|audible|hotstar|sony\s*liv|zee5|jio"
     r"|mxplayer|disney|paramount|cursor|openai|chatgpt|github|notion",
     re.I,
 )
 _INVESTMENT = re.compile(r"\bsip\b|mutual\s*fund|nps\b|ppf\b|elss\b|zerodha|groww|kuvera|\brd\b|\bfd\b", re.I)
+
+
+def compute_behavioral_analytics(transactions: list[NormalizedTransaction], income: float, expenses: float) -> dict[str, Any]:
+    from datetime import datetime
+    
+    weekend_spend = 0.0
+    weekday_spend = 0.0
+    month_end_balance_dips = 0
+
+    prev_balance = None
+    for t in transactions:
+        if t["flow"] == "debit":
+            try:
+                dt = datetime.strptime(t["date"], "%Y-%m-%d")
+                if dt.weekday() >= 5:  # Saturday or Sunday
+                    weekend_spend += t["amount"]
+                else:
+                    weekday_spend += t["amount"]
+                
+                # Check month end stress (days 25-31)
+                if dt.day >= 25 and t.get("balance_after") is not None:
+                    if float(t["balance_after"]) < (income * 0.10): # below 10% of monthly income means extreme cash crunch
+                        month_end_balance_dips += 1
+            except Exception:
+                pass
+
+    weekend_ratio = (weekend_spend / expenses) if expenses > 0 else 0.0
+
+    return {
+        "weekend_spend_pct": round(weekend_ratio * 100, 1),
+        "month_end_stress_events": month_end_balance_dips,
+        "is_impulsive_weekend_shopper": weekend_ratio > 0.40,
+    }
 
 
 def detect_money_leaks(
@@ -126,6 +161,60 @@ def detect_money_leaks(
             "detail": f"Overdraft fees, bounce charges, or penalties totaling ₹{total_stress:,.0f} — address underlying cash-flow timing issues.",
             "estimated_monthly_impact_inr": round(total_stress, 2),
         })
+
+    # ── 7. Statistical Outliers (Amount > Mean + 3 StdDev) ───────────────────
+    debits = [t["amount"] for t in transactions if t["flow"] == "debit" and t["amount"] > 0]
+    if len(debits) >= 10:
+        mean_spd = statistics.mean(debits)
+        std_spd = statistics.stdev(debits) if len(debits) > 1 else 0
+        threshold = mean_spd + (3 * std_spd)
+        
+        # Only flag if threshold is meaningful (e.g. at least 5000)
+        if threshold > 5000:
+            outliers = [t for t in transactions if t["flow"] == "debit" and t["amount"] > threshold and not t.get("is_investment") and not t.get("is_emi")]
+            for o in outliers:
+                leaks.append({
+                    "type": "statistical_outlier",
+                    "severity": "medium",
+                    "title": f"Unusually large expense: {o['merchant_clean']}",
+                    "detail": f"₹{o['amount']:,.0f} is a severe statistical outlier (average spend is ₹{mean_spd:,.0f}). Normal? Or irregular spike?",
+                    "estimated_monthly_impact_inr": None,
+                })
+
+    # ── 8. Rapid-Fire Double Charges ─────────────────────────────────────────
+    by_date_merch: dict[tuple[str, str], list[NormalizedTransaction]] = defaultdict(list)
+    for t in transactions:
+        if t["flow"] == "debit":
+            key = (t["date"], t["merchant_clean"].lower()[:80])
+            by_date_merch[key].append(t)
+            
+    for (dt, merch), items in by_date_merch.items():
+        if len(items) >= 2:
+            amounts = [i["amount"] for i in items]
+            if amounts.count(amounts[0]) >= 2: # Exact same amount charged multiple times same day
+                amt = amounts[0]
+                leaks.append({
+                    "type": "rapid_fire_charge",
+                    "severity": "high", # high severity since duplicate deductions are common bank/merchant glitches
+                    "title": f"Potential Double Charge: {items[0]['merchant_clean']}",
+                    "detail": f"Charged ₹{amt:,.0f} {amounts.count(amt)} times on {dt}. Verify if this was intentional or a payment gateway glitch.",
+                    "estimated_monthly_impact_inr": round(amt * (amounts.count(amt) - 1), 2),
+                })
+
+    # ── 9. Mass Exodus Transfers (>50% of monthly debit volume) ──────────────
+    total_debit_vol = sum(debits)
+    if total_debit_vol > 0:
+        for t in transactions:
+            if t["flow"] == "debit" and t["amount"] >= (total_debit_vol * 0.5):
+                # Ensure it's not an internal recognized investment
+                if not t.get("is_investment"):
+                    leaks.append({
+                        "type": "mass_exodus_transfer",
+                        "severity": "high",
+                        "title": "Massive single-day outflow",
+                        "detail": f"₹{t['amount']:,.0f} to {t['merchant_clean']} consumed {((t['amount']/total_debit_vol)*100):.0f}% of total outbound volume. Ensure account security.",
+                        "estimated_monthly_impact_inr": None,
+                    })
 
     # ── Dedup & sort ──────────────────────────────────────────────────────────
     seen: set[str] = set()

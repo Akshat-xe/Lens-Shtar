@@ -7,6 +7,7 @@ class NormalizedTransaction(TypedDict, total=False):
     date: str                          # ISO YYYY-MM-DD
     amount: float                      # positive magnitude
     flow: Literal["credit", "debit"]
+    balance_after: float | None
     merchant_raw: str
     merchant_clean: str
     category: str
