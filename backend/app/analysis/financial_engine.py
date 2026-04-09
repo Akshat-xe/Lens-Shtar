@@ -256,7 +256,7 @@ def run_financial_engine(
     ]
 
     emi_candidates = _detect_emi_candidates(transactions)
-    emi_monthly_estimate = float(sum(_d(x["amount"]) for x in emi_candidates).quantize(Decimal("0.01")))
+    emi_monthly_estimate = float(sum((_d(x["amount"]) for x in emi_candidates), Decimal("0.00")).quantize(Decimal("0.01")))
     recurring = _detect_recurring(transactions)
 
     tx_out: list[dict[str, Any]] = [
