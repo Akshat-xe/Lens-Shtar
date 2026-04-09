@@ -56,9 +56,8 @@
     }
     el.innerHTML = list
       .map(
-        (x) => `<div class="save-card"><div class="save-top"><div><span class="save-title">${x.title} <span class="save-badge">${x.bucket || "Suggestion"}</span></span><p class="save-desc">${x.detail || ""}</p></div><span class="save-impact">${
-          x.impact_inr_month_estimate ? inr(x.impact_inr_month_estimate) : "—"
-        }</span></div></div>`
+        (x) => `<div class="save-card"><div class="save-top"><div><span class="save-title">${x.title} <span class="save-badge">${x.bucket || "Suggestion"}</span></span><p class="save-desc">${x.detail || ""}</p></div><span class="save-impact">${x.impact_inr_month_estimate ? inr(x.impact_inr_month_estimate) : "—"
+          }</span></div></div>`
       )
       .join("");
   }
@@ -74,9 +73,8 @@
       .slice(0, 20)
       .map((t) => {
         const pos = t.flow === "credit";
-        return `<div class="tx-row"><div class="tx-avatar">${(t.merchant || "X").charAt(0).toUpperCase()}</div><div class="tx-info"><div class="tx-merchant">${t.merchant || "Unknown"}</div><div class="tx-meta">${t.category || "Other"} · ${t.date || ""}</div></div><span class="tx-amount ${
-          pos ? "positive" : ""
-        }">${pos ? "+" : "-"}${inr(t.amount || 0)}</span></div>`;
+        return `<div class="tx-row"><div class="tx-avatar">${(t.merchant || "X").charAt(0).toUpperCase()}</div><div class="tx-info"><div class="tx-merchant">${t.merchant || "Unknown"}</div><div class="tx-meta">${t.category || "Other"} · ${t.date || ""}</div></div><span class="tx-amount ${pos ? "positive" : ""
+          }">${pos ? "+" : "-"}${inr(t.amount || 0)}</span></div>`;
       })
       .join("");
   }

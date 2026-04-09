@@ -121,13 +121,13 @@
     const dd = document.getElementById("accountDropdown");
     const out = document.getElementById("signOutBtn");
     if (!btn || !dd) return;
-    
+
     // Toggle dropdown
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const isOpen = dd.style.display !== "none";
       dd.style.display = isOpen ? "none" : "block";
-      
+
       // Close on escape key
       if (!isOpen) {
         const closeOnEscape = (e) => {
@@ -139,14 +139,14 @@
         document.addEventListener("keydown", closeOnEscape);
       }
     });
-    
+
     // Close on outside click
     document.addEventListener("click", (e) => {
       if (!dd.contains(e.target) && e.target !== btn) {
         dd.style.display = "none";
       }
     });
-    
+
     // Sign out handler
     if (out) out.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -171,7 +171,7 @@
       try {
         // Get current session
         const { data, error } = await supabase.auth.getSession();
-        
+
         if (!error && data && data.session) {
           // Validate session is not expired
           if (data.session.expires_at && data.session.expires_at * 1000 > Date.now()) {
@@ -202,7 +202,7 @@
             }
           }
         }
-        
+
         // Listen for auth changes across tabs
         supabase.auth.onAuthStateChange(async (_evt, session) => {
           console.log('Auth state changed:', _evt, session?.user?.email);
@@ -211,7 +211,7 @@
           setStoredSession(session);
           await refreshSettingsStatus();
           renderAuthSlot();
-          
+
           // Update other tabs via localStorage event
           if (session) {
             localStorage.setItem('ls_auth_updated', Date.now().toString());
@@ -241,7 +241,7 @@
         state.user = null;
       }
     }
-    
+
     // Listen for auth updates from other tabs
     window.addEventListener('storage', (e) => {
       if (e.key === 'ls_auth_updated') {
@@ -249,7 +249,7 @@
         bootstrapSession();
       }
     });
-    
+
     // Refresh settings status and render UI
     await refreshSettingsStatus();
     renderAuthSlot();
@@ -265,6 +265,35 @@
       else navbar.style.transform = "translateY(0)";
       prevY = y;
     });
+  }
+
+  async function checkBackendHealth() {
+    try {
+      const res = await fetch(`${window.LensConfig.apiBase}/api/health`, { cache: "no-store", mode: "cors" });
+      if (!res.ok) throw new Error("Health check failed");
+    } catch (e) {
+      showGracefulOfflineMessage();
+    }
+  }
+
+  function showGracefulOfflineMessage() {
+    if (document.getElementById("offlineBanner")) return;
+    const banner = document.createElement("div");
+    banner.id = "offlineBanner";
+    banner.style.position = "fixed";
+    banner.style.bottom = "0";
+    banner.style.left = "0";
+    banner.style.width = "100%";
+    banner.style.background = "#ea580c";
+    banner.style.color = "white";
+    banner.style.textAlign = "center";
+    banner.style.padding = "12px 20px";
+    banner.style.zIndex = "9999";
+    banner.style.fontSize = "14px";
+    banner.style.fontWeight = "600";
+    banner.style.boxShadow = "0 -4px 12px rgba(0,0,0,0.5)";
+    banner.innerHTML = `Local Demo Backend not detected at <span style="font-family:monospace">${window.LensConfig.apiBase}</span>. Interactive features disabled. <a href='#' style='color:white;text-decoration:underline;margin-left:8px;font-weight:700' onclick='window.location.reload(); return false;'>Retry Connection</a>`;
+    document.body.appendChild(banner);
   }
 
   window.LensApp = {
@@ -292,5 +321,6 @@
 
   setupNavbarScroll();
   bootstrapSession();
+  checkBackendHealth();
 })();
 
