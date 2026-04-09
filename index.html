@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lens Shtar — Premium AI Financial Intelligence</title>
+  <meta name="description" content="AI-powered financial intelligence for precision tracking, money leak detection, and advanced spending analysis." />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- ===================== NAVBAR ===================== -->
+  <nav class="navbar" id="navbar">
+    <div class="container nav-container">
+      <a href="#home" class="nav-brand" id="brandBtn">
+        <div class="brand-icon">L</div>
+        <span>Lens Shtar</span>
+      </a>
+      <div class="nav-links" id="navLinks">
+        <a href="#dashboard" id="navDash">Dashboard</a>
+        <a href="#settings" id="navSettings">Settings</a>
+      </div>
+      <div class="nav-actions">
+        <div id="authActionSlot">
+          <button id="googleSignInBtn" class="btn btn-outline" type="button">Sign in with Google</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===================== MAIN APP WRAPPER ===================== -->
+  <main id="appWrapper">
+    
+    <!-- ===================== VIEW: HOME ===================== -->
+    <div id="view-home" class="view active">
+      <section class="hero">
+        <div class="container">
+          <div class="hero-content">
+            <span class="badge badge-blue" style="margin-bottom: 24px;">India's Premier AI Finance Agent</span>
+            <h1>Unlock the truth hidden in your <span class="text-primary">transactions.</span></h1>
+            <p>Upload bank statements (PDF, CSV, Excel, OFX). Lens Shtar automatically categorizes data, detects money leaks, and delivers sophisticated saving strategies in seconds using Gemini AI.</p>
+            <div class="hero-cta-row">
+              <button id="heroUploadBtn" class="btn btn-primary btn-lg">Analyze Statement</button>
+              <a href="#dashboard" class="btn btn-outline btn-lg">View Dashboard</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+        <div class="container">
+          <div class="upload-flow" id="uploadSection">
+            <div class="section-header">
+              <h2>Securely Analyze <span class="text-primary">Statement</span></h2>
+              <p>Your files are processed with privacy-first intelligence.</p>
+            </div>
+            
+            <div class="card glass-panel-strong" style="max-width: 700px; margin: 0 auto;">
+              <!-- IDLE STATE -->
+              <div class="upload-state active" id="stateIdle">
+                <div class="upload-box" id="uploadBox">
+                  <span style="font-size: 32px; display: block; margin-bottom: 12px;">📁</span>
+                  <h3 style="font-size: 20px; margin-bottom: 8px;">Drag & Drop file here</h3>
+                  <p style="font-size: 14px; color: var(--fg-muted);">Supports Native PDF, CSV, XLS, OFX up to 50MB</p>
+                  <input id="realUploadInput" type="file" accept=".pdf,.csv,.xls,.xlsx" style="display:none" />
+                  <button class="btn btn-primary" style="margin-top: 24px;" id="browseUploadBtn" type="button">Browse Files</button>
+                </div>
+              </div>
+
+              <!-- PROCESSING STATE -->
+              <div class="upload-state" id="stateProcessing">
+                <div style="text-align: left;">
+                  <h3 style="font-size: 18px; margin-bottom: 8px;">Processing File...</h3>
+                  <p style="font-size: 14px; color: var(--fg-muted);" id="uploadStatusText">Validating payload</p>
+                  <div class="progress-container">
+                    <div class="progress-bar" id="uploadProgressBar"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===================== VIEW: DASHBOARD ===================== -->
+    <div id="view-dashboard" class="view" style="padding-bottom: 100px;">
+      <div class="container dash-header">
+        <div>
+          <h1>Financial Overview</h1>
+          <p id="dashboardSubtitle" style="color: var(--fg-muted);">Sign in and upload a file to see real insights.</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <a class="btn btn-outline" href="#settings">Settings</a>
+          <a class="btn btn-primary" href="#home">Upload New</a>
+        </div>
+      </div>
+
+      <div class="container" id="dashContentWrapper">
+        <div class="metrics-grid">
+          <div class="metric-card glass-panel">
+            <div class="metric-top"><span class="metric-icon">💵</span></div>
+            <div class="metric-label">Total Income</div>
+            <div class="metric-val" id="dashIncome">--</div>
+          </div>
+          <div class="metric-card glass-panel">
+            <div class="metric-top"><span class="metric-icon">💸</span></div>
+            <div class="metric-label">Total Expenses</div>
+            <div class="metric-val" id="dashExpenses">--</div>
+          </div>
+          <div class="metric-card glass-panel-strong">
+            <div class="metric-top"><span class="metric-icon">💰</span></div>
+            <div class="metric-label">Net Savings</div>
+            <div class="metric-val" id="dashNet">--</div>
+          </div>
+          <div class="metric-card glass-panel">
+            <div class="metric-top"><span class="metric-icon">🏷️</span></div>
+            <div class="metric-label">Transactions</div>
+            <div class="metric-val" id="dashTxCount">--</div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card glass-panel">
+            <h3>Monthly Trend</h3>
+            <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+          </div>
+          <div class="chart-card glass-panel">
+            <h3>Spending Breakdown</h3>
+            <div class="donut-wrap"><canvas id="donutChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="charts-grid" style="grid-template-columns: 1fr 1fr;">
+          <div class="glass-panel" style="padding: 24px;">
+            <h3 style="margin-bottom: 20px;">🧠 AI Insights</h3>
+            <div id="aiInsightsList">
+              <p class="text-muted">No insights available yet.</p>
+            </div>
+          </div>
+          <div class="glass-panel" style="padding: 24px;">
+            <h3 style="margin-bottom: 20px;">🚨 Money Leaks Detected</h3>
+            <div id="leaksList">
+              <p class="text-muted">No leaks detected.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== VIEW: SETTINGS ===================== -->
+    <div id="view-settings" class="view section">
+      <div class="container settings-box">
+        <div class="section-header" style="margin-bottom: 40px; text-align: left;">
+          <h2>Configuration</h2>
+          <p>Setup your AI engine connection securely.</p>
+        </div>
+
+        <div class="card glass-panel" style="margin-bottom: 24px;">
+          <h3 style="margin-bottom: 12px; font-size: 18px;">Account Status</h3>
+          <div id="settingsAccountSummary" class="text-muted" style="font-size: 14px;">Not signed in.</div>
+        </div>
+
+        <div class="card glass-panel-strong">
+          <h3 style="margin-bottom: 12px; font-size: 18px;">Gemini API Key</h3>
+          <p class="text-muted" style="font-size: 14px; margin-bottom: 20px;">
+            Stored highly securely in temporary session memory. Lens Shtar never saves your key to a database.
+          </p>
+          <input type="password" id="geminiKeyInput" class="input-control" placeholder="AIzaSy..." />
+          <div style="display: flex; gap: 12px; margin-top: 16px;">
+            <button id="saveKeyBtn" class="btn btn-primary">Save Key securely</button>
+            <button id="clearKeyBtn" class="btn btn-outline">Clear</button>
+          </div>
+          <p id="keyStatusText" style="margin-top: 16px; font-size: 14px; font-weight: 500;" class="text-muted">Checking status...</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
