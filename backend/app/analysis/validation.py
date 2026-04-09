@@ -8,7 +8,7 @@ from typing import Any
 from app.analysis.models import NormalizedTransaction
 
 _MERCHANT_CLEAN_RE = re.compile(r"\s+")
-_UPI_MARKERS = ("upi", "/u", "upi/", "@", "imps", "neft", "rtgs")
+_UPI_MARKERS = ("upi", "/u", "upi/", "@ybl", "@oksbi", "@paytm", "@ibl", "imps", "neft", "rtgs")
 
 
 def _parse_date(val: Any) -> str | None:
@@ -22,16 +22,14 @@ def _parse_date(val: Any) -> str | None:
     s = str(val).strip()
     if not s:
         return None
-    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%m/%d/%Y", "%Y/%m/%d", "%d.%m.%Y"):
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%m/%d/%Y", "%Y/%m/%d", "%d.%m.%Y", "%d %b %Y", "%d %B %Y"):
         try:
-            return datetime.strptime(s[:10], fmt).strftime("%Y-%m-%d")
+            return datetime.strptime(s[:11], fmt).strftime("%Y-%m-%d")
         except ValueError:
             continue
     try:
-        # Excel serial or pandas parsed
         if isinstance(val, (int, float)):
             from datetime import timedelta
-
             base = datetime(1899, 12, 30)
             d = base + timedelta(days=float(val))
             return d.strftime("%Y-%m-%d")
@@ -74,11 +72,18 @@ def _infer_payment_method(merchant: str, description: str) -> str:
         return "Auto-debit"
     if "emi" in blob or "loan" in blob:
         return "EMI"
+    if "neft" in blob:
+        return "NEFT"
+    if "rtgs" in blob:
+        return "RTGS"
+    if "imps" in blob:
+        return "IMPS"
+    if "atm" in blob or "cash" in blob:
+        return "Cash"
     return "Other"
 
 
 def normalize_transaction_row(row: dict[str, Any]) -> NormalizedTransaction | None:
-    """Normalize a loose dict (from CSV/XLS/Gemini) into a validated transaction."""
     date_s = _parse_date(row.get("date"))
     if not date_s:
         return None
@@ -95,7 +100,6 @@ def normalize_transaction_row(row: dict[str, Any]) -> NormalizedTransaction | No
     elif flow_raw in ("debit", "dr", "out", "outflow", "withdrawal"):
         flow = "debit"
     else:
-        # Infer from signed amount if present in row
         raw_amt = row.get("signed_amount") or row.get("signed")
         if raw_amt is not None:
             try:
@@ -111,7 +115,8 @@ def normalize_transaction_row(row: dict[str, Any]) -> NormalizedTransaction | No
     merchant_clean = str(row.get("merchant_clean") or merchant_raw or "Unknown")[:500]
     merchant_clean = _clean_merchant(merchant_clean)
     description = _clean_merchant(str(row.get("description") or merchant_raw or "")[:500])
-    category = str(row.get("category") or row.get("category_suggestion") or "Uncategorized").strip() or "Uncategorized"
+    category = str(row.get("category") or row.get("category_suggestion") or "Other").strip() or "Other"
+    sub_category = str(row.get("sub_category") or "").strip()
     payment = str(row.get("payment_method") or "").strip()
     if not payment:
         payment = _infer_payment_method(merchant_clean, description)
@@ -119,12 +124,18 @@ def normalize_transaction_row(row: dict[str, Any]) -> NormalizedTransaction | No
     return NormalizedTransaction(
         date=date_s,
         amount=float(amount),
-        flow=flow,
+        flow=flow,  # type: ignore[arg-type]
         merchant_raw=merchant_raw or merchant_clean,
         merchant_clean=merchant_clean,
         category=category[:80],
+        sub_category=sub_category[:80],
         description=description,
         payment_method=payment[:40],
+        is_emi=bool(row.get("is_emi", False)),
+        is_recurring=bool(row.get("is_recurring", False)),
+        is_investment=bool(row.get("is_investment", False)),
+        is_insurance=bool(row.get("is_insurance", False)),
+        stress_flag=bool(row.get("stress_flag", False)),
     )
 
 

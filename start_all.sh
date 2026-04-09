@@ -43,7 +43,8 @@ done
 # ── Banner ────────────────────────────────────────────────────
 echo ""
 head_line "╔══════════════════════════════════════════════════════╗"
-head_line "║        Lens Shtar — Local Demo Architecture          ║"
+head_line "║        Lens Shtar — Local Backend Architecture       ║"
+head_line "║                 welcome to eclipse                   ║"
 head_line "╚══════════════════════════════════════════════════════╝"
 echo ""
 

@@ -7,9 +7,11 @@ from typing import Any
 from app.analysis.models import NormalizedTransaction
 
 _SUBSCRIPTION = re.compile(
-    r"netflix|spotify|prime|youtube|apple|google\s*one|dropbox|notion|audible|hotstar|sony\s*liv|zee5",
+    r"netflix|spotify|prime|youtube|apple|google\s*one|dropbox|notion|audible|hotstar|sony\s*liv|zee5|jio"
+    r"|mxplayer|disney|paramount|cursor|openai|chatgpt|github|notion",
     re.I,
 )
+_INVESTMENT = re.compile(r"\bsip\b|mutual\s*fund|nps\b|ppf\b|elss\b|zerodha|groww|kuvera|\brd\b|\bfd\b", re.I)
 
 
 def detect_money_leaks(
@@ -17,12 +19,12 @@ def detect_money_leaks(
     _recurring: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     leaks: list[dict[str, Any]] = []
-    debit_counts = Counter()
+    debit_counts: Counter = Counter()
     for t in transactions:
         if t["flow"] == "debit":
             debit_counts[t["merchant_clean"].lower()[:80]] += 1
 
-    # Duplicate subscription-like merchants same month
+    # ── 1. Duplicate subscription charges same month ──────────────────────────
     by_month_merch: dict[tuple[str, str], list[NormalizedTransaction]] = defaultdict(list)
     for t in transactions:
         if t["flow"] != "debit":
@@ -36,22 +38,18 @@ def detect_money_leaks(
         m0 = items[0]["merchant_clean"]
         if _SUBSCRIPTION.search(m0) or any(_SUBSCRIPTION.search(i["merchant_clean"]) for i in items):
             total = round(sum(i["amount"] for i in items), 2)
-            leaks.append(
-                {
-                    "type": "duplicate_subscription",
-                    "severity": "high" if len(items) > 2 else "medium",
-                    "title": f"Multiple charges for {m0}",
-                    "detail": f"{len(items)} similar debits in {month} totaling ₹{total:,.0f}. Check duplicate app store or platform logins.",
-                    "estimated_monthly_impact_inr": round(total, 2),
-                }
-            )
+            leaks.append({
+                "type": "duplicate_subscription",
+                "severity": "high",
+                "title": f"Duplicate charge: {m0}",
+                "detail": f"{len(items)} debits in {month} totaling ₹{total:,.0f} — check for double billing or multiple plan logins.",
+                "estimated_monthly_impact_inr": round(total, 2),
+            })
 
-    # Repeated small transactions (impulse / micro-spend)
+    # ── 2. Repeated small impulse spends ─────────────────────────────────────
     small_buckets: dict[str, list[NormalizedTransaction]] = defaultdict(list)
     for t in transactions:
-        if t["flow"] != "debit":
-            continue
-        if t["amount"] > 500:
+        if t["flow"] != "debit" or t["amount"] > 600:
             continue
         small_buckets[t["merchant_clean"].lower()[:80]].append(t)
 
@@ -59,40 +57,77 @@ def detect_money_leaks(
         if len(items) < 5:
             continue
         total = round(sum(i["amount"] for i in items), 2)
-        leaks.append(
-            {
-                "type": "repeated_small_transactions",
-                "severity": "medium",
-                "title": f"Frequent small spends at {items[0]['merchant_clean']}",
-                "detail": f"{len(items)} transactions under ₹500 — pattern suggests impulse or micro-habit spending (total ₹{total:,.0f}).",
-                "estimated_monthly_impact_inr": total,
-            }
-        )
+        leaks.append({
+            "type": "repeated_small_spend",
+            "severity": "medium",
+            "title": f"Micro-habit spend: {items[0]['merchant_clean']}",
+            "detail": f"{len(items)} transactions under ₹600 totaling ₹{total:,.0f} — impulse pattern detected.",
+            "estimated_monthly_impact_inr": total,
+        })
 
-    # Single charge for a subscription-like merchant in-window (audit trail)
+    # ── 3. Unused or single-occurrence subscription ───────────────────────────
     seen_unused: set[str] = set()
     for t in transactions:
         if t["flow"] != "debit":
             continue
         k = t["merchant_clean"].lower()[:80]
-        if not _SUBSCRIPTION.search(t["merchant_clean"]) and not _SUBSCRIPTION.search(t["description"]):
+        if not _SUBSCRIPTION.search(t["merchant_clean"]) and not _SUBSCRIPTION.search(t.get("description") or ""):
             continue
         if debit_counts.get(k, 0) != 1:
             continue
         if k in seen_unused:
             continue
         seen_unused.add(k)
-        leaks.append(
-            {
-                "type": "unused_service",
-                "severity": "low",
-                "title": f"Review subscription: {t['merchant_clean']}",
-                "detail": "Only one debit in this export — confirm renewals/off-cycle billing or cancel if unused.",
-                "estimated_monthly_impact_inr": round(t["amount"], 2),
-            }
-        )
+        leaks.append({
+            "type": "unused_subscription",
+            "severity": "low",
+            "title": f"Review subscription: {t['merchant_clean']}",
+            "detail": f"Only 1 charge visible — confirm whether you actively use this or cancel if idle. ₹{t['amount']:,.0f}/period.",
+            "estimated_monthly_impact_inr": round(t["amount"], 2),
+        })
 
-    # Dedup leaks by title
+    # ── 4. High cash ATM reliance ─────────────────────────────────────────────
+    atm_txs = [t for t in transactions if t["flow"] == "debit" and t["payment_method"] == "Cash"]
+    if atm_txs:
+        atm_total = sum(t["amount"] for t in atm_txs)
+        total_debits = sum(t["amount"] for t in transactions if t["flow"] == "debit") or 1
+        if atm_total / total_debits > 0.20:
+            leaks.append({
+                "type": "high_cash_reliance",
+                "severity": "medium",
+                "title": "High cash/ATM withdrawal pattern",
+                "detail": f"₹{atm_total:,.0f} withdrawn as cash ({atm_total/total_debits*100:.0f}% of expenses) — cash spending is invisible and untrackable.",
+                "estimated_monthly_impact_inr": round(atm_total, 2),
+            })
+
+    # ── 5. EMI burden > 40% of income ────────────────────────────────────────
+    emi_txs = [t for t in transactions if t["flow"] == "debit" and t.get("is_emi")]
+    income_txs = [t for t in transactions if t["flow"] == "credit"]
+    if emi_txs and income_txs:
+        emi_total = sum(t["amount"] for t in emi_txs)
+        income_total = sum(t["amount"] for t in income_txs) or 1
+        if emi_total / income_total > 0.40:
+            leaks.append({
+                "type": "emi_overload",
+                "severity": "high",
+                "title": "EMI burden exceeds 40% of income",
+                "detail": f"Total EMIs ₹{emi_total:,.0f} = {emi_total/income_total*100:.0f}% of income. This is above the healthy 35% threshold — risk of cash crunch.",
+                "estimated_monthly_impact_inr": round(emi_total, 2),
+            })
+
+    # ── 6. Stress flags (overdraft, penalties) ────────────────────────────────
+    stress_txs = [t for t in transactions if t.get("stress_flag")]
+    if stress_txs:
+        total_stress = sum(t["amount"] for t in stress_txs)
+        leaks.append({
+            "type": "stress_charges",
+            "severity": "high",
+            "title": f"Financial stress charges detected ({len(stress_txs)} events)",
+            "detail": f"Overdraft fees, bounce charges, or penalties totaling ₹{total_stress:,.0f} — address underlying cash-flow timing issues.",
+            "estimated_monthly_impact_inr": round(total_stress, 2),
+        })
+
+    # ── Dedup & sort ──────────────────────────────────────────────────────────
     seen: set[str] = set()
     unique: list[dict[str, Any]] = []
     for L in leaks:

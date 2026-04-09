@@ -1,3 +1,7 @@
+"""
+pipeline.py — Upload processing pipeline.
+Handles PDF (via Gemini) and CSV/XLS (local) extraction, then runs the financial engine.
+"""
 from __future__ import annotations
 
 import uuid
@@ -20,7 +24,7 @@ ALLOWED_SUFFIX = {".pdf", ".csv", ".xls", ".xlsx"}
 def _suffix(name: str) -> str:
     if not name or "." not in name:
         return ""
-    return name[name.rfind(".") :].lower()
+    return name[name.rfind("."):].lower()
 
 
 async def run_upload_pipeline(
@@ -32,9 +36,6 @@ async def run_upload_pipeline(
     settings: Settings,
     include_ai_summary: bool = True,
 ) -> dict[str, Any]:
-    """
-    Uses ONLY session_store Gemini key for PDF / optional summary — never a server key.
-    """
     if len(content) > settings.max_upload_bytes:
         raise FileTooLargeError(settings.max_upload_bytes)
 
@@ -49,27 +50,33 @@ async def run_upload_pipeline(
     warnings: list[str] = []
     gemini_used_for_pdf = False
     raw_rows: list[dict[str, Any]] = []
+    gemini_meta: dict[str, Any] = {}  # profile, income_profile, stress_indicators, behavioral_insights
 
     if suf == ".pdf":
         gemini_used_for_pdf = True
         try:
-            raw_rows = await extract_transactions_from_pdf(api_key, content, settings)
+            result = await extract_transactions_from_pdf(api_key, content, settings)
+            raw_rows = result.get("transactions", [])
+            gemini_meta = {
+                "profile": result.get("profile") or {},
+                "income_profile": result.get("income_profile") or {},
+                "stress_indicators": result.get("stress_indicators") or {},
+                "behavioral_insights": result.get("behavioral_insights") or {},
+            }
         except GeminiHttpError as e:
-            # On 429 from PDF extraction — we cannot proceed without Gemini for PDFs.
-            # Give user actionable advice and a hint to use CSV instead.
             if e.status_code == 429:
-                print(f"[pipeline] PDF extraction blocked by Gemini 429. Propagating to client.")
+                print(f"[pipeline] PDF extraction blocked by 429: {e.message}")
                 raise GeminiHttpError(
                     429,
                     "Gemini rate limit hit while reading your PDF. "
-                    "Wait 60 seconds and retry, or export your statement as CSV/XLS and upload that — "
-                    "CSV files are processed locally without any Gemini quota."
+                    "Wait 60 seconds and retry, OR export your statement as CSV/XLS — "
+                    "those are processed locally with zero Gemini quota."
                 ) from e
             raise
         except ValueError as e:
             raise BadInputError(str(e)) from e
         if not raw_rows:
-            warnings.append("Gemini returned no transactions — statement may be unreadable or empty.")
+            warnings.append("Gemini returned no transactions — statement may be image-only or empty.")
     else:
         try:
             if suf == ".csv":
@@ -79,21 +86,22 @@ async def run_upload_pipeline(
         except Exception as e:
             raise BadInputError(f"Could not parse spreadsheet: {e}") from e
         if not raw_rows:
-            raise BadInputError("No transaction rows found in spreadsheet — check columns or export format.")
+            raise BadInputError("No transaction rows found — check column headers or export format.")
 
     normalized = validate_and_normalize(raw_rows)
     if not normalized:
         raise BadInputError(
-            "No valid transactions after validation. Try another export or ensure dates and amounts are present."
+            "No valid transactions after validation. Ensure dates and amounts are present."
         )
 
-    engine_out = run_financial_engine(normalized)
+    engine_out = run_financial_engine(normalized, gemini_meta=gemini_meta)
     leaks = detect_money_leaks(normalized, engine_out.get("recurring", []))
     suggestions = build_savings_suggestions(
         engine_out["kpis"],
         engine_out["charts"]["category_breakdown"],
         leaks,
         engine_out["kpis"].get("upi_spend", 0.0),
+        engine_out.get("behavioral_insights") or {},
     )
 
     ai_summary: str | None = None
@@ -103,13 +111,12 @@ async def run_upload_pipeline(
         try:
             ai_summary = await generate_ai_summary(api_key, facts, settings)
         except GeminiHttpError as e:
-            # AI summary is optional — always fall back to rule-based, never fail the upload.
             print(f"[pipeline] AI summary failed ({e.status_code}): {e.message} — using rule-based fallback.")
             ai_summary_error = e.message
             ai_summary = rule_based_fallback_summary(normalized, engine_out["kpis"])
         except Exception as e:
             print(f"[pipeline] AI summary unexpected error: {e} — using rule-based fallback.")
-            ai_summary_error = "AI summary unavailable. Showing rule-based summary instead."
+            ai_summary_error = "AI summary unavailable."
             ai_summary = rule_based_fallback_summary(normalized, engine_out["kpis"])
     else:
         ai_summary = rule_based_fallback_summary(normalized, engine_out["kpis"])
@@ -125,6 +132,10 @@ async def run_upload_pipeline(
         "leaks": leaks,
         "suggestions": suggestions,
         "transactions": engine_out["transactions"],
+        "profile": engine_out.get("profile") or {},
+        "income_profile": engine_out.get("income_profile") or {},
+        "stress_indicators": engine_out.get("stress_indicators") or {},
+        "behavioral_insights": engine_out.get("behavioral_insights") or {},
         "ai_summary": ai_summary,
         "ai_summary_error": ai_summary_error,
         "meta": {
@@ -145,8 +156,6 @@ async def run_upload_pipeline(
 
 
 class PipelineError(Exception):
-    """Base for user-facing pipeline errors."""
-
     def http_status(self) -> int:
         return 400
 
@@ -154,10 +163,7 @@ class PipelineError(Exception):
 class FileTooLargeError(PipelineError):
     def __init__(self, max_bytes: int) -> None:
         self.max_bytes = max_bytes
-        super().__init__(
-            f"File too large. Maximum size is {max(1, max_bytes // (1024 * 1024))} MB for this server."
-        )
-
+        super().__init__(f"File too large. Maximum size is {max(1, max_bytes // (1024 * 1024))} MB.")
     def http_status(self) -> int:
         return 413
 
@@ -165,7 +171,6 @@ class FileTooLargeError(PipelineError):
 class UnsupportedFileError(PipelineError):
     def __init__(self, allowed: str) -> None:
         super().__init__(f"Unsupported file type. Allowed: {allowed}.")
-
     def http_status(self) -> int:
         return 415
 
@@ -173,7 +178,6 @@ class UnsupportedFileError(PipelineError):
 class MissingApiKeyError(PipelineError):
     def __init__(self) -> None:
         super().__init__("API key required")
-
     def http_status(self) -> int:
         return 400
 

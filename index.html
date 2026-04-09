@@ -1,16 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lens Shtar — Premium AI Financial Intelligence</title>
-  <meta name="description" content="AI-powered financial intelligence for precision tracking, money leak detection, and advanced spending analysis." />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <title>Lens Shtar — AI Financial Intelligence</title>
+  <meta name="description"
+    content="Deep AI-powered financial analysis. Upload bank statements to get expert-level income profiling, expense categorization, debt indicators, savings health, and behavioral spending insights." />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@500;600;700&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
+
 <body>
-  <!-- ===================== NAVBAR ===================== -->
+
+  <!-- NAVBAR -->
   <nav class="navbar" id="navbar">
     <div class="container nav-container">
       <a href="#home" class="nav-brand" id="brandBtn">
@@ -23,60 +29,67 @@
       </div>
       <div class="nav-actions">
         <div id="authActionSlot">
-          <button id="googleSignInBtn" class="btn btn-outline" type="button">Sign in with Google</button>
+          <button id="googleSignInBtn" class="btn btn-outline" type="button">Sign in</button>
         </div>
       </div>
     </div>
   </nav>
 
-  <!-- ===================== MAIN APP WRAPPER ===================== -->
   <main id="appWrapper">
-    
-    <!-- ===================== VIEW: HOME ===================== -->
+
+    <!-- ═══════════════════════ VIEW: HOME ═══════════════════════ -->
     <div id="view-home" class="view active">
       <section class="hero">
         <div class="container">
           <div class="hero-content">
-            <span class="badge badge-blue" style="margin-bottom: 24px;">India's Premier AI Finance Agent</span>
+            <span class="badge badge-blue" style="margin-bottom:24px">India's Premier AI Finance Agent</span>
             <h1>Unlock the truth hidden in your <span class="text-primary">transactions.</span></h1>
-            <p>Upload bank statements (PDF, CSV, Excel, OFX). Lens Shtar automatically categorizes data, detects money leaks, and delivers sophisticated saving strategies in seconds using Gemini AI.</p>
+            <p>Upload bank statements (PDF, CSV, Excel). Lens Shtar profiles your income, maps every rupee, detects
+              money leaks, and delivers expert-level financial intelligence in seconds.</p>
             <div class="hero-cta-row">
               <button id="heroUploadBtn" class="btn btn-primary btn-lg">Analyze Statement</button>
               <a href="#dashboard" class="btn btn-outline btn-lg">View Dashboard</a>
             </div>
+            <div class="hero-stats">
+              <div class="hero-stat"><span class="hero-stat-num">6</span><span class="hero-stat-label">Insight
+                  Categories</span></div>
+              <div class="hero-stat-div"></div>
+              <div class="hero-stat"><span class="hero-stat-num">PDF</span><span class="hero-stat-label">Native AI
+                  Parsing</span></div>
+              <div class="hero-stat-div"></div>
+              <div class="hero-stat"><span class="hero-stat-num">0</span><span class="hero-stat-label">Data
+                  Stored</span></div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section class="section" style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+      <section class="section upload-section" id="uploadSection">
         <div class="container">
-          <div class="upload-flow" id="uploadSection">
-            <div class="section-header">
-              <h2>Securely Analyze <span class="text-primary">Statement</span></h2>
-              <p>Your files are processed with privacy-first intelligence.</p>
-            </div>
-            
-            <div class="card glass-panel-strong" style="max-width: 700px; margin: 0 auto;">
-              <!-- IDLE STATE -->
-              <div class="upload-state active" id="stateIdle">
-                <div class="upload-box" id="uploadBox">
-                  <span style="font-size: 32px; display: block; margin-bottom: 12px;">📁</span>
-                  <h3 style="font-size: 20px; margin-bottom: 8px;">Drag & Drop file here</h3>
-                  <p style="font-size: 14px; color: var(--fg-muted);">Supports Native PDF, CSV, XLS, OFX up to 50MB</p>
-                  <input id="realUploadInput" type="file" accept=".pdf,.csv,.xls,.xlsx" style="display:none" />
-                  <button class="btn btn-primary" style="margin-top: 24px;" id="browseUploadBtn" type="button">Browse Files</button>
-                </div>
+          <div class="section-header">
+            <h2>Analyze Your <span class="text-primary">Statement</span></h2>
+            <p>Your files never leave your device unencrypted. Processing happens through your personal Gemini key.</p>
+          </div>
+          <div class="card glass-panel-strong upload-card">
+            <div class="upload-state active" id="stateIdle">
+              <div class="upload-box" id="uploadBox">
+                <div class="upload-icon-wrap"><span class="upload-icon">📁</span></div>
+                <h3>Drag & Drop your statement here</h3>
+                <p>PDF (AI parsed) · CSV · XLS · XLSX — up to 50MB</p>
+                <input id="realUploadInput" type="file" accept=".pdf,.csv,.xls,.xlsx" style="display:none" />
+                <button class="btn btn-primary" style="margin-top:24px" id="browseUploadBtn" type="button">Browse
+                  Files</button>
               </div>
-
-              <!-- PROCESSING STATE -->
-              <div class="upload-state" id="stateProcessing">
-                <div style="text-align: left;">
-                  <h3 style="font-size: 18px; margin-bottom: 8px;">Processing File...</h3>
-                  <p style="font-size: 14px; color: var(--fg-muted);" id="uploadStatusText">Validating payload</p>
-                  <div class="progress-container">
-                    <div class="progress-bar" id="uploadProgressBar"></div>
-                  </div>
+            </div>
+            <div class="upload-state" id="stateProcessing">
+              <div class="processing-wrap">
+                <div class="processing-ring"></div>
+                <h3 id="uploadStatusText">Validating payload…</h3>
+                <div class="progress-container">
+                  <div class="progress-bar" id="uploadProgressBar"></div>
                 </div>
+                <p class="text-muted processing-hint">AI is deeply reading your statement across 6 insight categories…
+                </p>
               </div>
             </div>
           </div>
@@ -84,95 +97,250 @@
       </section>
     </div>
 
-    <!-- ===================== VIEW: DASHBOARD ===================== -->
-    <div id="view-dashboard" class="view" style="padding-bottom: 100px;">
-      <div class="container dash-header">
-        <div>
-          <h1>Financial Overview</h1>
-          <p id="dashboardSubtitle" style="color: var(--fg-muted);">Sign in and upload a file to see real insights.</p>
-        </div>
-        <div style="display: flex; gap: 12px;">
-          <a class="btn btn-outline" href="#settings">Settings</a>
-          <a class="btn btn-primary" href="#home">Upload New</a>
-        </div>
-      </div>
+    <!-- ═══════════════════════ VIEW: DASHBOARD ═══════════════════════ -->
+    <div id="view-dashboard" class="view">
+      <div class="dashboard-wrap">
 
-      <div class="container" id="dashContentWrapper">
-        <div class="metrics-grid">
-          <div class="metric-card glass-panel">
-            <div class="metric-top"><span class="metric-icon">💵</span></div>
-            <div class="metric-label">Total Income</div>
-            <div class="metric-val" id="dashIncome">--</div>
+        <!-- Dash Header -->
+        <div class="container dash-header">
+          <div>
+            <h1 id="dashTitle">Financial Overview</h1>
+            <p id="dashboardSubtitle" class="text-muted">Upload a statement to see deep insights.</p>
           </div>
-          <div class="metric-card glass-panel">
-            <div class="metric-top"><span class="metric-icon">💸</span></div>
-            <div class="metric-label">Total Expenses</div>
-            <div class="metric-val" id="dashExpenses">--</div>
-          </div>
-          <div class="metric-card glass-panel-strong">
-            <div class="metric-top"><span class="metric-icon">💰</span></div>
-            <div class="metric-label">Net Savings</div>
-            <div class="metric-val" id="dashNet">--</div>
-          </div>
-          <div class="metric-card glass-panel">
-            <div class="metric-top"><span class="metric-icon">🏷️</span></div>
-            <div class="metric-label">Transactions</div>
-            <div class="metric-val" id="dashTxCount">--</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <div id="dashPeriodBadge" class="badge badge-blue" style="font-size:12px;padding:6px 12px;display:none">
+            </div>
+            <a class="btn btn-outline btn-sm" href="#settings">Settings</a>
+            <a class="btn btn-primary btn-sm" href="#home">↑ Upload New</a>
           </div>
         </div>
 
-        <div class="charts-grid">
-          <div class="chart-card glass-panel">
-            <h3>Monthly Trend</h3>
-            <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+        <!-- Profile Card (from Gemini) -->
+        <div class="container" id="profileSection" style="display:none;margin-bottom:20px">
+          <div class="profile-card glass-panel-strong">
+            <div class="profile-left">
+              <div class="profile-avatar" id="profileAvatar">?</div>
+              <div>
+                <div class="profile-name" id="profileName">—</div>
+                <div class="profile-sub" id="profileBank">—</div>
+              </div>
+            </div>
+            <div class="profile-meta">
+              <div class="pmeta-item"><span class="pmeta-label">Account Type</span><span id="profileAccType"
+                  class="pmeta-val">—</span></div>
+              <div class="pmeta-item"><span class="pmeta-label">IFSC</span><span id="profileIFSC"
+                  class="pmeta-val">—</span></div>
+              <div class="pmeta-item"><span class="pmeta-label">Period</span><span id="profilePeriod"
+                  class="pmeta-val">—</span></div>
+              <div class="pmeta-item"><span class="pmeta-label">Income Type</span><span id="profileIncomeType"
+                  class="pmeta-val">—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI Row -->
+        <div class="container">
+          <div class="kpi-grid">
+            <div class="kpi-card glass-panel kpi-income">
+              <div class="kpi-icon">💵</div>
+              <div class="kpi-label">Total Income</div>
+              <div class="kpi-val" id="dashIncome">—</div>
+              <div class="kpi-sub" id="dashIncomeSource">—</div>
+            </div>
+            <div class="kpi-card glass-panel kpi-expense">
+              <div class="kpi-icon">💸</div>
+              <div class="kpi-label">Total Expenses</div>
+              <div class="kpi-val" id="dashExpenses">—</div>
+              <div class="kpi-sub" id="dashFixedVar">—</div>
+            </div>
+            <div class="kpi-card glass-panel-strong kpi-savings">
+              <div class="kpi-icon">💰</div>
+              <div class="kpi-label">Net Savings</div>
+              <div class="kpi-val" id="dashNet">—</div>
+              <div class="kpi-sub" id="dashSavingsRate">—</div>
+            </div>
+            <div class="kpi-card glass-panel kpi-invest">
+              <div class="kpi-icon">📈</div>
+              <div class="kpi-label">Investments</div>
+              <div class="kpi-val" id="dashInvest">—</div>
+              <div class="kpi-sub" id="dashInvestRate">—</div>
+            </div>
+            <div class="kpi-card glass-panel kpi-emi">
+              <div class="kpi-icon">🏦</div>
+              <div class="kpi-label">EMI / Debt</div>
+              <div class="kpi-val" id="dashEMI">—</div>
+              <div class="kpi-sub" id="dashEMIRatio">—</div>
+            </div>
+            <div class="kpi-card glass-panel kpi-tx">
+              <div class="kpi-icon">🔢</div>
+              <div class="kpi-label">Transactions</div>
+              <div class="kpi-val" id="dashTxCount">—</div>
+              <div class="kpi-sub" id="dashCashPct">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Summary -->
+        <div class="container">
+          <div class="ai-summary-card glass-panel-strong" id="aiSummaryCard" style="display:none">
+            <div class="ai-badge">🧠 AI Analyst Summary</div>
+            <p id="aiSummaryText"></p>
+          </div>
+        </div>
+
+        <!-- Main Charts Row: Multi-line trend + Donut -->
+        <div class="container charts-main-row">
+          <div class="chart-card glass-panel chart-trend-wrap">
+            <div class="chart-header">
+              <div>
+                <h3>Income vs Expenses vs Savings</h3>
+                <p class="text-muted" style="font-size:13px;margin-top:2px">Monthly breakdown — all values in ₹</p>
+              </div>
+              <div class="chart-legend" id="trendLegend"></div>
+            </div>
+            <div class="chart-body"><canvas id="trendChart"></canvas></div>
           </div>
           <div class="chart-card glass-panel">
-            <h3>Spending Breakdown</h3>
+            <div class="chart-header">
+              <h3>Spending Breakdown</h3>
+            </div>
             <div class="donut-wrap"><canvas id="donutChart"></canvas></div>
           </div>
         </div>
 
-        <div class="charts-grid" style="grid-template-columns: 1fr 1fr;">
-          <div class="glass-panel" style="padding: 24px;">
-            <h3 style="margin-bottom: 20px;">🧠 AI Insights</h3>
-            <div id="aiInsightsList">
-              <p class="text-muted">No insights available yet.</p>
+        <!-- Secondary Charts Row: Payment methods + Top merchants -->
+        <div class="container charts-secondary-row">
+          <div class="chart-card glass-panel">
+            <div class="chart-header">
+              <h3>Payment Methods</h3>
+            </div>
+            <div class="chart-body" style="height:200px"><canvas id="paymentChart"></canvas></div>
+          </div>
+          <div class="chart-card glass-panel">
+            <div class="chart-header">
+              <h3>Top Merchants</h3>
+            </div>
+            <div id="topMerchantsList" class="merchant-list"></div>
+          </div>
+        </div>
+
+        <!-- Section 4-row: Leaks | Suggestions | Stress | Recurring -->
+        <div class="container insights-grid">
+          <!-- Money Leaks -->
+          <div class="glass-panel insight-panel">
+            <div class="insight-panel-header">
+              <span class="insight-panel-icon">🚨</span>
+              <h3>Money Leaks</h3>
+            </div>
+            <div id="leaksList">
+              <p class="text-muted">No leaks detected. Nice work!</p>
             </div>
           </div>
-          <div class="glass-panel" style="padding: 24px;">
-            <h3 style="margin-bottom: 20px;">🚨 Money Leaks Detected</h3>
-            <div id="leaksList">
-              <p class="text-muted">No leaks detected.</p>
+
+          <!-- Suggestions -->
+          <div class="glass-panel insight-panel">
+            <div class="insight-panel-header">
+              <span class="insight-panel-icon">💡</span>
+              <h3>Smart Suggestions</h3>
+            </div>
+            <div id="suggestionsList">
+              <p class="text-muted">Upload a statement to see suggestions.</p>
+            </div>
+          </div>
+
+          <!-- Recurring & Subscriptions -->
+          <div class="glass-panel insight-panel">
+            <div class="insight-panel-header">
+              <span class="insight-panel-icon">🔁</span>
+              <h3>Recurring Charges</h3>
+            </div>
+            <div id="recurringList">
+              <p class="text-muted">No recurring patterns detected.</p>
+            </div>
+          </div>
+
+          <!-- Behavioral Insights -->
+          <div class="glass-panel insight-panel">
+            <div class="insight-panel-header">
+              <span class="insight-panel-icon">🎯</span>
+              <h3>Behavioral Insights</h3>
+            </div>
+            <div id="behavioralPanel">
+              <p class="text-muted">Behavioral data not available.</p>
             </div>
           </div>
         </div>
+
+        <!-- Transaction Table -->
+        <div class="container" style="margin-bottom:80px">
+          <div class="glass-panel tx-table-wrap">
+            <div class="tx-table-header">
+              <h3>All Transactions</h3>
+              <div class="tx-filters">
+                <select id="txFilterFlow" class="select-control">
+                  <option value="">All</option>
+                  <option value="debit">Expenses</option>
+                  <option value="credit">Income</option>
+                </select>
+                <select id="txFilterCat" class="select-control">
+                  <option value="">All Categories</option>
+                </select>
+                <input id="txSearch" class="input-control" placeholder="Search…"
+                  style="max-width:180px;padding:8px 12px;font-size:13px" />
+              </div>
+            </div>
+            <div class="tx-table-scroll">
+              <table class="tx-table" id="txTable">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Merchant</th>
+                    <th>Category</th>
+                    <th>Method</th>
+                    <th>Amount</th>
+                    <th>Flags</th>
+                  </tr>
+                </thead>
+                <tbody id="txTableBody">
+                  <tr>
+                    <td colspan="6" class="text-muted" style="text-align:center;padding:32px">No transactions loaded.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="tx-pagination" id="txPagination"></div>
+          </div>
+        </div>
+
       </div>
     </div>
 
-    <!-- ===================== VIEW: SETTINGS ===================== -->
+    <!-- ═══════════════════════ VIEW: SETTINGS ═══════════════════════ -->
     <div id="view-settings" class="view section">
       <div class="container settings-box">
-        <div class="section-header" style="margin-bottom: 40px; text-align: left;">
+        <div class="section-header" style="margin-bottom:40px;text-align:left">
           <h2>Configuration</h2>
-          <p>Setup your AI engine connection securely.</p>
+          <p>Setup your AI engine securely.</p>
         </div>
-
-        <div class="card glass-panel" style="margin-bottom: 24px;">
-          <h3 style="margin-bottom: 12px; font-size: 18px;">Account Status</h3>
-          <div id="settingsAccountSummary" class="text-muted" style="font-size: 14px;">Not signed in.</div>
+        <div class="card glass-panel" style="margin-bottom:24px">
+          <h3 style="margin-bottom:12px;font-size:18px">Account Status</h3>
+          <div id="settingsAccountSummary" class="text-muted" style="font-size:14px">Not signed in.</div>
         </div>
-
         <div class="card glass-panel-strong">
-          <h3 style="margin-bottom: 12px; font-size: 18px;">Gemini API Key</h3>
-          <p class="text-muted" style="font-size: 14px; margin-bottom: 20px;">
-            Stored highly securely in temporary session memory. Lens Shtar never saves your key to a database.
+          <h3 style="margin-bottom:12px;font-size:18px">Gemini API Key</h3>
+          <p class="text-muted" style="font-size:14px;margin-bottom:20px">
+            Stored in temporary session memory only — never persisted to any database.<br />
+            Get your free key at <a href="https://aistudio.google.com/apikey" target="_blank"
+              style="color:var(--accent)">aistudio.google.com/apikey</a>
           </p>
-          <input type="password" id="geminiKeyInput" class="input-control" placeholder="AIzaSy..." />
-          <div style="display: flex; gap: 12px; margin-top: 16px;">
-            <button id="saveKeyBtn" class="btn btn-primary">Save Key securely</button>
+          <input type="password" id="geminiKeyInput" class="input-control" placeholder="AIzaSy…" />
+          <div style="display:flex;gap:12px;margin-top:16px">
+            <button id="saveKeyBtn" class="btn btn-primary">Save Key</button>
             <button id="clearKeyBtn" class="btn btn-outline">Clear</button>
           </div>
-          <p id="keyStatusText" style="margin-top: 16px; font-size: 14px; font-weight: 500;" class="text-muted">Checking status...</p>
+          <p id="keyStatusText" style="margin-top:16px;font-size:14px;font-weight:500" class="text-muted">Checking
+            status…</p>
         </div>
       </div>
     </div>
@@ -182,4 +350,5 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
   <script src="js/app.js"></script>
 </body>
+
 </html>
