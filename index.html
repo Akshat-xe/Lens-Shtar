@@ -126,14 +126,11 @@
               </div>
             </div>
             <div class="profile-meta">
-              <div class="pmeta-item"><span class="pmeta-label">Account Type</span><span id="profileAccType"
-                  class="pmeta-val">—</span></div>
-              <div class="pmeta-item"><span class="pmeta-label">IFSC</span><span id="profileIFSC"
-                  class="pmeta-val">—</span></div>
-              <div class="pmeta-item"><span class="pmeta-label">Period</span><span id="profilePeriod"
-                  class="pmeta-val">—</span></div>
-              <div class="pmeta-item"><span class="pmeta-label">Income Type</span><span id="profileIncomeType"
-                  class="pmeta-val">—</span></div>
+              <div class="pmeta-item"><span class="pmeta-label">Account Type</span><span id="profileAccType" class="pmeta-val">—</span></div>
+              <div class="pmeta-item"><span class="pmeta-label">IFSC</span><span id="profileIFSC" class="pmeta-val">—</span></div>
+              <div class="pmeta-item"><span class="pmeta-label">Period</span><span id="profilePeriod" class="pmeta-val">—</span></div>
+              <div class="pmeta-item"><span class="pmeta-label">Income Type</span><span id="profileIncomeType" class="pmeta-val">—</span></div>
+              <div class="pmeta-item"><span class="pmeta-label">Currency</span><span id="profileCurrency" class="pmeta-val currency-val">—</span></div>
             </div>
           </div>
         </div>
@@ -188,13 +185,30 @@
           </div>
         </div>
 
+        <!-- Reconciliation Status -->
+        <div class="container" id="reconciliationSection" style="display:none;margin-bottom:20px">
+          <div class="recon-card" id="reconCard">
+            <div class="recon-left">
+              <span class="recon-icon" id="reconIcon">✅</span>
+              <div>
+                <div class="recon-status" id="reconStatus">Data Verified</div>
+                <div class="recon-detail" id="reconDetail">All transaction totals match statement summary.</div>
+              </div>
+            </div>
+            <div class="recon-right">
+              <span class="recon-confidence" id="reconConfidence">High Confidence</span>
+              <div class="recon-checks" id="reconChecks"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Main Charts Row: Multi-line trend + Donut -->
         <div class="container charts-main-row">
           <div class="chart-card glass-panel chart-trend-wrap">
             <div class="chart-header">
               <div>
                 <h3>Income vs Expenses vs Savings</h3>
-                <p class="text-muted" style="font-size:13px;margin-top:2px">Monthly breakdown — all values in ₹</p>
+                <p class="text-muted" style="font-size:13px;margin-top:2px" id="chartSubtitle">Monthly breakdown</p>
               </div>
               <div class="chart-legend" id="trendLegend"></div>
             </div>

@@ -1,18 +1,6 @@
 """
-gemini_client.py — Deep Financial Analyst Gemini client.
-
-Extraction prompt is an expert-level financial analyst + behavioral economist prompt
-that returns structured JSON across 6 categories:
-  1. Profile & Verification
-  2. Income & Cash Inflow Profiling
-  3. Expense Categorization & Outflow Analytics
-  4. Debt, Liabilities & Stress Indicators
-  5. Savings, Investments & Insurance Health
-  6. Behavioral & Vendor Insights
-
-Model strategy (April 2026 free tier):
-  Primary  : gemini-2.5-flash      (~10 RPM, ~250 RPD)
-  Fallback : gemini-2.5-flash-lite (~15 RPM, ~1000 RPD)
+gemini_client.py — Bank-grade financial extraction with currency intelligence,
+reconciliation data, and 12-point accuracy layer.
 """
 from __future__ import annotations
 
@@ -34,40 +22,51 @@ MAX_RETRIES_PER_MODEL = 4
 BASE_BACKOFF_SECONDS  = 4.0
 MAX_BACKOFF_SECONDS   = 60.0
 
+# ── Extraction Prompt (bank-grade accuracy, 12 reliability layers) ────────────
+EXTRACTION_PROMPT = """You are a senior bank reconciliation analyst and forensic accountant.
+Read the attached bank/credit-card statement PDF with maximum precision.
 
-# ── Deep Extraction Prompt ────────────────────────────────────────────────────
-EXTRACTION_PROMPT = """You are an expert Financial Analyst and Behavioral Economist.
-Analyze the provided bank/credit-card statement PDF thoroughly.
-
-Return ONLY a single valid JSON object (no markdown, no explanation) with exactly this structure:
+Return ONLY one valid JSON object — no markdown, no explanations, no truncation.
 
 {
+  "currency": {
+    "code": "INR",
+    "symbol": "₹",
+    "locale": "en-IN",
+    "detected_from": "statement_header | symbol | bank_name | inferred"
+  },
+  "balances": {
+    "opening_balance": null,
+    "closing_balance": null,
+    "statement_total_credit": null,
+    "statement_total_debit": null
+  },
   "profile": {
-    "account_holder_name": "string or null",
-    "account_number_masked": "string or null (last 4 digits only if visible)",
-    "bank_name": "string or null",
+    "account_holder_name": null,
+    "account_number_masked": null,
+    "bank_name": null,
     "account_type": "Savings | Current | Credit Card | null",
-    "branch": "string or null",
-    "ifsc": "string or null",
-    "statement_from": "YYYY-MM-DD or null",
-    "statement_to": "YYYY-MM-DD or null"
+    "branch": null,
+    "ifsc": null,
+    "statement_from": null,
+    "statement_to": null
   },
   "income_profile": {
-    "primary_source": "string describing main income source",
+    "primary_source": null,
     "primary_frequency": "Monthly | Bi-weekly | Weekly | Irregular | null",
     "income_consistency": "Fixed | Variable | Freelance | Mixed",
-    "secondary_sources": ["list of secondary income types identified"]
+    "secondary_sources": []
   },
   "transactions": [
     {
       "date": "YYYY-MM-DD",
-      "amount": 123.45,
+      "amount": 0.00,
       "flow": "debit | credit",
-      "merchant_raw": "exact text from statement",
-      "merchant_clean": "readable merchant name",
+      "merchant_raw": "verbatim text from statement",
+      "merchant_clean": "human-readable name",
       "category": "Food & Dining | Housing | Transportation | Shopping | Subscriptions | Utilities | Entertainment | Health & Wellness | Income | Transfers | EMIs | Insurance | Investments | Education | Cash & ATM | Other",
-      "sub_category": "more specific label e.g. Fuel, Groceries, OTT, SIP, etc.",
-      "description": "short memo",
+      "sub_category": "Fuel | Groceries | OTT | SIP | Rent | Salary | Dining | Pharmacy | etc.",
+      "description": "30-word memo",
       "payment_method": "UPI | Card | NEFT | IMPS | RTGS | Cash | Auto-debit | EMI | Cheque | Other",
       "is_emi": false,
       "is_recurring": false,
@@ -81,37 +80,77 @@ Return ONLY a single valid JSON object (no markdown, no explanation) with exactl
     "bounced_transactions": 0,
     "late_payment_fees": 0,
     "micro_borrowing_count": 0,
-    "notes": "any notable stress patterns observed"
+    "notes": null
   },
   "behavioral_insights": {
-    "post_payday_splurge": true,
-    "cash_reliance_pct": 12.5,
-    "top_vendors": ["vendor1", "vendor2", "vendor3"],
-    "spending_pattern": "description of spending timing and habits"
+    "post_payday_splurge": false,
+    "cash_reliance_pct": 0.0,
+    "top_vendors": [],
+    "spending_pattern": null
   }
 }
 
-Extraction rules:
-- amount is ALWAYS a positive number. Use flow: "credit" for money IN, "debit" for money OUT.
-- Infer payment_method from transaction narration keywords (UPI→UPI, POS/CARD→Card, NACH/ECS→Auto-debit, ATM→Cash).
-- Set is_emi=true for EMI/NACH/loan repayments.
-- Set is_recurring=true for transactions appearing regularly (same merchant, similar amount, multiple months).
-- Set is_investment=true for SIP, mutual fund, RD, FD, stock purchases.
-- Set is_insurance=true for LIC, health/vehicle/term insurance premiums.
-- Set stress_flag=true for overdraft, bounced, penalty, late fee entries.
-- Extract ALL transactions — do not skip any. Even transfers and internal credits.
-- post_payday_splurge=true if high spending within 7 days post largest credit.
-- cash_reliance_pct = (ATM withdrawals / total debits) * 100.
-- If a field is truly unknown, use null — never invent data.
+CRITICAL EXTRACTION RULES — follow ALL of these without exception:
+
+CURRENCY:
+- Detect currency from: rupee sign (₹→INR), dollar ($→USD), pound (£→GBP), euro (€→EUR), statement header, bank origin.
+- If truly unknown, use {"code":"UNKNOWN","symbol":"?","locale":"en","detected_from":"inferred"}.
+- NEVER default to INR if the statement is clearly from a USD/GBP/EUR bank.
+
+BALANCES (reconciliation anchors):
+- Extract opening_balance and closing_balance exactly as printed — do not compute.
+- Extract statement_total_credit and statement_total_debit from the statement summary row if present.
+- If a value isn't printed, use null. Never invent balances.
+
+TRANSACTIONS — accuracy mandate:
+- Extract EVERY SINGLE transaction — do not skip any, even repeats on same date.
+- Multi-line entries: merge all lines of one transaction into one JSON object.
+- amount is ALWAYS a positive decimal. flow:"credit" = money IN, flow:"debit" = money OUT.
+- NEVER round amounts — use exact values (e.g., 1234.56, not 1235).
+- For identical-looking entries on same date: keep all (different times/refs = different transactions).
+- No duplicate suppression — include all rows from the statement.
+
+CATEGORY CLASSIFICATION — strict mapping:
+- Salary, pension, business credits → "Income"
+- Rent, maintenance, home loan → "Housing"
+- Petrol, fuel, auto, metro, cab → "Transportation"
+- Restaurant, zomato, swiggy, cafe → "Food & Dining"
+- Grocery store, supermarket, DMart → "Food & Dining" / sub_category:"Groceries"
+- Netflix, Spotify, Amazon Prime, Hotstar → "Subscriptions"
+- Electricity, water, gas, broadband, mobile recharge → "Utilities"
+- LIC, health/term/vehicle insurance → "Insurance"
+- SIP, mutual fund, PPF, NPS, RD, FD, stocks → "Investments"
+- School fees, tuition, exam, coaching → "Education"
+- ATM withdrawal, cash → "Cash & ATM"
+- Hospital, pharmacy, doctor → "Health & Wellness"
+- EMI, NACH, loan repayment → "EMIs"
+- Internal transfer, own account → "Transfers"
+- Set "Other" only when none of the above applies.
+
+FLAGS:
+- is_emi: true for NACH/ECS/EMI/loan repayments
+- is_recurring: true when you see this merchant+similar_amount across multiple months
+- is_investment: true for SIP/MF/PPF/NPS/FD/RD/stocks
+- is_insurance: true for LIC/health/term/vehicle premiums
+- stress_flag: true for bounced cheque / overdraft / penalty / late fee charges
+
+BEHAVIORAL:
+- post_payday_splurge: true if spending surges within 7 days after biggest credit
+- cash_reliance_pct: ATM+cash debits / total debits × 100 (round to 1 decimal)
+- top_vendors: top 5 merchant names by frequency of debit
 """
 
-SUMMARY_PROMPT_TEMPLATE = """You are a Senior Financial Coach at a premium wealth management firm.
-Write a professional yet warm narrative summary (max 150 words) for the client based ONLY on verified facts below.
+SUMMARY_PROMPT_TEMPLATE = """You are a Senior Financial Analyst at a premium private bank.
+Write a professional, insight-dense narrative (max 160 words) for the client based ONLY on the verified facts below.
 
-Do NOT invent numbers. Use the exact figures. Be specific, actionable, and India-aware (₹, INR context).
-Structure: 2 sentences on income health, 2 on expense/savings, 1 on top risk, 1 motivating recommendation.
+RULES:
+- Use ONLY the exact numbers provided. Never invent or round figures.
+- If reconciliation shows a mismatch, acknowledge it (e.g., "Note: minor data variance detected").
+- Structure: 1-2 sentences on income health → expense analysis → savings/investment health → 1 key risk → 1 specific actionable.
+- Currency context: use the correct currency symbol (from currency.symbol), not assumed ₹.
+- Tone: calm, precise, premium — like a real wealth manager's report.
 
-Verified Financial Facts:
+Verified Facts:
 {facts_json}
 """
 
@@ -125,26 +164,23 @@ def _parse_json_loose(text: str) -> dict[str, Any]:
 
 
 def _map_gemini_error(status_code: int, body: str) -> tuple[int, str]:
-    detail_msg = ""
+    detail = ""
     try:
-        err_json = json.loads(body)
-        detail_msg = err_json.get("error", {}).get("message", "")
+        detail = json.loads(body).get("error", {}).get("message", "")
     except Exception:
         pass
-    print(f"[gemini] HTTP {status_code} | detail={detail_msg[:200]!r}")
+    print(f"[gemini] HTTP {status_code} | {detail[:180]!r}")
     low = body.lower()
     if status_code in (401, 403) or "api key" in low or "permission" in low:
-        return 401, "Invalid Gemini API key or insufficient permissions. Check your key at https://aistudio.google.com/apikey"
+        return 401, "Invalid Gemini API key. Check at https://aistudio.google.com/apikey"
     if status_code == 429:
-        hint = " (daily quota exhausted — resets at midnight Pacific. Use CSV upload to bypass Gemini entirely.)" if "per_day" in low or "daily" in low else " (per-minute limit — retry system will backoff and retry automatically.)"
-        return 429, f"Gemini rate limit exceeded.{hint}"
+        hint = " (daily quota exhausted — resets midnight Pacific. Use CSV to bypass.)" if "per_day" in low or "daily" in low else " (per-minute limit — backoff active.)"
+        return 429, f"Gemini rate limit.{hint}"
     if status_code in (500, 503):
-        return 502, "Gemini service temporarily unavailable. Please retry."
+        return 502, "Gemini temporarily unavailable. Retry in a moment."
     if status_code == 504:
-        return 504, "Gemini timed out. Try a shorter/smaller statement."
-    if status_code == 413 or "size" in low:
-        return 413, "File too large for Gemini. Try a smaller statement or export as CSV."
-    return 502, f"Gemini request failed (HTTP {status_code}). Try CSV/XLS export as alternative."
+        return 504, "Gemini timed out. Try a smaller statement."
+    return 502, f"Gemini request failed (HTTP {status_code})."
 
 
 def _jitter_backoff(attempt: int) -> float:
@@ -160,31 +196,29 @@ async def _gemini_post_with_retry(
     settings: Settings,
     operation: str = "request",
 ) -> tuple[httpx.Response, str]:
-    timeout = settings.gemini_timeout_seconds
     models_to_try = [primary_model]
     if primary_model != FALLBACK_MODEL:
         models_to_try.append(FALLBACK_MODEL)
     last_response: httpx.Response | None = None
     for model in models_to_try:
         url = url_template.format(model=model)
-        print(f"[gemini] {operation}: using model={model}")
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        print(f"[gemini] {operation}: model={model}")
+        async with httpx.AsyncClient(timeout=settings.gemini_timeout_seconds) as client:
             for attempt in range(MAX_RETRIES_PER_MODEL + 1):
                 try:
                     r = await client.post(url, params={"key": api_key}, json=body)
                 except httpx.TimeoutException:
-                    print(f"[gemini] {operation}: timeout attempt {attempt+1}")
                     if attempt >= MAX_RETRIES_PER_MODEL:
-                        raise GeminiHttpError(504, "Gemini timed out. Try a shorter statement.")
+                        raise GeminiHttpError(504, "Gemini timed out.")
                     await asyncio.sleep(_jitter_backoff(attempt))
                     continue
                 if r.status_code == 200:
-                    print(f"[gemini] {operation}: ✓ success model={model}")
+                    print(f"[gemini] {operation}: ✓ {model}")
                     return r, model
                 if r.status_code in (429, 503) and attempt < MAX_RETRIES_PER_MODEL:
-                    ra = r.headers.get("retry-after") or r.headers.get("x-ratelimit-reset-after")
+                    ra = r.headers.get("retry-after")
                     wait = min(float(ra), MAX_BACKOFF_SECONDS) if ra else _jitter_backoff(attempt)
-                    print(f"[gemini] {operation}: {r.status_code} attempt {attempt+1}, waiting {wait:.1f}s…")
+                    print(f"[gemini] {operation}: {r.status_code} attempt {attempt+1}, wait {wait:.1f}s")
                     await asyncio.sleep(wait)
                     continue
                 last_response = r
@@ -192,7 +226,8 @@ async def _gemini_post_with_retry(
             else:
                 last_response = r  # type: ignore[possibly-undefined]
         if last_response is not None and last_response.status_code in (429, 503):
-            print(f"[gemini] {operation}: retries exhausted on {model}, {'trying fallback' if model != FALLBACK_MODEL else 'no more models'}")
+            if model != FALLBACK_MODEL:
+                print(f"[gemini] {operation}: retries exhausted on {model} → trying fallback")
             continue
         break
     if last_response is not None:
@@ -206,11 +241,11 @@ async def extract_transactions_from_pdf(
     settings: Settings,
 ) -> dict[str, Any]:
     """
-    Returns a rich dict with keys:
-      transactions, profile, income_profile, stress_indicators, behavioral_insights
+    Returns rich dict:
+      transactions, currency, balances, profile, income_profile, stress_indicators, behavioral_insights
     """
     if len(pdf_bytes) > settings.max_upload_bytes:
-        raise ValueError("PDF exceeds configured upload limit")
+        raise ValueError("PDF exceeds upload limit")
     b64 = base64.standard_b64encode(pdf_bytes).decode("ascii")
     url_template = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     body: dict[str, Any] = {
@@ -221,35 +256,36 @@ async def extract_transactions_from_pdf(
                 {"inline_data": {"mime_type": "application/pdf", "data": b64}},
             ],
         }],
-        "generation_config": {
-            "temperature": 0.05,
-            "response_mime_type": "application/json",
-        },
+        "generation_config": {"temperature": 0.02, "response_mime_type": "application/json"},
     }
-    print(f"[gemini] extract_transactions_from_pdf: PDF={len(pdf_bytes)//1024}kB, model={settings.gemini_model}")
+    print(f"[gemini] extract: PDF={len(pdf_bytes)//1024}kB, model={settings.gemini_model}")
     r, model_used = await _gemini_post_with_retry(
-        url_template, api_key, body, settings.gemini_model, settings, "extract_transactions"
+        url_template, api_key, body, settings.gemini_model, settings, "extract"
     )
     if r.status_code != 200:
         code, msg = _map_gemini_error(r.status_code, r.text)
         if r.status_code == 429:
-            msg += " TIP: Export statement as CSV/XLS — those are processed locally with zero Gemini quota."
+            msg += " Use CSV/XLS export for zero-quota processing."
         raise GeminiHttpError(code, msg)
     try:
         data = r.json()
         text = data["candidates"][0]["content"]["parts"][0]["text"]
         parsed = _parse_json_loose(text)
-    except (KeyError, IndexError, json.JSONDecodeError, TypeError) as e:
-        print(f"[gemini] extract: bad response shape. Body[:600]: {r.text[:600]}")
-        raise GeminiHttpError(502, "Gemini returned unexpected format. Try CSV export or reduce statement length.") from e
+    except Exception as e:
+        print(f"[gemini] extract: bad response. Body[:500]: {r.text[:500]}")
+        raise GeminiHttpError(502, "Gemini returned unexpected format. Try CSV export.") from e
+
     txs = parsed.get("transactions")
     if not isinstance(txs, list):
         raise GeminiHttpError(502, "Gemini JSON missing 'transactions' array.")
-    out = [item for item in txs if isinstance(item, dict)]
-    print(f"[gemini] extract: ✓ {len(out)} transactions (model={model_used})")
-    # Return full rich payload
+
+    out = [t for t in txs if isinstance(t, dict)]
+    print(f"[gemini] extract: ✓ {len(out)} tx (model={model_used})")
+
     return {
         "transactions": out,
+        "currency": parsed.get("currency") or {"code": "INR", "symbol": "₹", "locale": "en-IN", "detected_from": "default"},
+        "balances": parsed.get("balances") or {},
         "profile": parsed.get("profile") or {},
         "income_profile": parsed.get("income_profile") or {},
         "stress_indicators": parsed.get("stress_indicators") or {},
@@ -267,31 +303,29 @@ async def generate_ai_summary(
     url_template = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     body: dict[str, Any] = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generation_config": {"temperature": 0.4, "max_output_tokens": 600},
+        "generation_config": {"temperature": 0.3, "max_output_tokens": 600},
     }
 
-    class _ReducedTimeout:
+    class _LimitedTimeout:
         def __init__(self, s: Settings):
             self._s = s
             self.gemini_timeout_seconds = min(s.gemini_timeout_seconds, 60.0)
             self.gemini_model = s.gemini_model
-        def __getattr__(self, name: str):
-            return getattr(self._s, name)
+        def __getattr__(self, n: str):
+            return getattr(self._s, n)
 
-    print(f"[gemini] generate_ai_summary: model={settings.gemini_model}")
     r, _ = await _gemini_post_with_retry(
         url_template, api_key, body, settings.gemini_model,
-        _ReducedTimeout(settings),  # type: ignore[arg-type]
-        "generate_ai_summary",
+        _LimitedTimeout(settings),  # type: ignore[arg-type]
+        "summary",
     )
     if r.status_code != 200:
         code, msg = _map_gemini_error(r.status_code, r.text)
         raise GeminiHttpError(r.status_code if r.status_code in (401, 403, 429) else 502, msg)
     try:
-        data = r.json()
-        return str(data["candidates"][0]["content"]["parts"][0]["text"]).strip()
-    except (KeyError, IndexError, TypeError) as e:
-        raise GeminiHttpError(502, "Could not read Gemini summary response.") from e
+        return str(r.json()["candidates"][0]["content"]["parts"][0]["text"]).strip()
+    except Exception as e:
+        raise GeminiHttpError(502, "Could not read Gemini summary.") from e
 
 
 class GeminiHttpError(Exception):

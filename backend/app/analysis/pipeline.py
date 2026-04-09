@@ -62,6 +62,8 @@ async def run_upload_pipeline(
                 "income_profile": result.get("income_profile") or {},
                 "stress_indicators": result.get("stress_indicators") or {},
                 "behavioral_insights": result.get("behavioral_insights") or {},
+                "currency": result.get("currency") or {},
+                "balances": result.get("balances") or {},
             }
         except GeminiHttpError as e:
             if e.status_code == 429:
@@ -136,6 +138,8 @@ async def run_upload_pipeline(
         "income_profile": engine_out.get("income_profile") or {},
         "stress_indicators": engine_out.get("stress_indicators") or {},
         "behavioral_insights": engine_out.get("behavioral_insights") or {},
+        "currency": engine_out.get("currency") or {"code": "INR", "symbol": "₹", "locale": "en-IN"},
+        "reconciliation": engine_out.get("reconciliation") or {},
         "ai_summary": ai_summary,
         "ai_summary_error": ai_summary_error,
         "meta": {

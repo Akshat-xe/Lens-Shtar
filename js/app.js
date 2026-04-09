@@ -1,7 +1,10 @@
 /**
- * Lens Shtar — SPA Core Engine v3
- * Deep financial dashboard: 6-category analysis, multi-line chart, transaction table.
- * Auth, routing, settings and upload flows preserved from v1.
+ * Lens Shtar — SPA Core Engine v4
+ * - Valorant-style multi-line gradient chart
+ * - Currency-intelligent formatting
+ * - Reconciliation status rendering
+ * - 12-point financial accuracy display
+ * Auth / upload / routing preserved from v3.
  */
 (() => {
   // ── CONFIG ──────────────────────────────────────────────────────────────────
@@ -21,14 +24,42 @@
     return CONFIG.DEFAULT_API_BASE;
   }
   const API_BASE = resolveApiBase();
-  const supabase = window.supabase ? window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY) : null;
+  const supabase = window.supabase
+    ? window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY)
+    : null;
 
   const state = {
     session: null, user: null, hasApiKey: false,
-    dashboardData: null,
+    dashboardData: null, currency: { code: "INR", symbol: "₹", locale: "en-IN" },
     txPage: 1, txAll: [], txFiltered: [],
     charts: { trend: null, donut: null, payment: null },
   };
+
+  // ── CURRENCY FORMATTER ───────────────────────────────────────────────────────
+  function buildFormatter(currencyInfo) {
+    const code = (currencyInfo?.code || "INR").toUpperCase();
+    const symbol = currencyInfo?.symbol || "₹";
+    const locale = currencyInfo?.locale || "en-IN";
+    return function fmt(v, compact = false) {
+      const n = Math.abs(v || 0);
+      if (compact) {
+        if (n >= 10000000) return symbol + (n / 10000000).toFixed(2) + "Cr";
+        if (n >= 100000) return symbol + (n / 100000).toFixed(2) + "L";
+        if (n >= 1000) return symbol + (n / 1000).toFixed(1) + "k";
+        return symbol + n.toFixed(0);
+      }
+      try {
+        return new Intl.NumberFormat(locale, {
+          style: "currency", currency: code, maximumFractionDigits: 0,
+        }).format(v || 0);
+      } catch (_) {
+        return symbol + new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(v || 0);
+      }
+    };
+  }
+
+  let fmt = buildFormatter(state.currency); // will be rebuilt after dashboard loads
+  const fmtNum = v => new Intl.NumberFormat("en-IN").format(v || 0);
 
   // ── ROUTER ──────────────────────────────────────────────────────────────────
   function handleRoute() {
@@ -201,18 +232,16 @@
     const steps = [
       [15, "Sending to AI engine…"],
       [30, "Gemini is reading your statement…"],
-      [55, "Extracting transactions & profiling income…"],
-      [70, "Categorizing expenses & detecting patterns…"],
-      [82, "Building financial health report…"],
-      [92, "Generating AI analyst summary…"],
+      [50, "Extracting all transactions, detecting currency…"],
+      [65, "Categorizing expenses, detecting patterns…"],
+      [78, "Running reconciliation engine…"],
+      [88, "Generating verified financial report…"],
+      [94, "AI analyst writing summary…"],
     ];
-    let stepIdx = 0;
+    let idx = 0;
     const stepTimer = setInterval(() => {
-      if (stepIdx < steps.length) {
-        setUploadState("processing", steps[stepIdx][1], steps[stepIdx][0]);
-        stepIdx++;
-      }
-    }, 3500);
+      if (idx < steps.length) { setUploadState("processing", steps[idx][1], steps[idx][0]); idx++; }
+    }, 3800);
 
     try {
       const res = await fetch(`${API_BASE}/api/upload?include_ai_summary=true`, {
@@ -224,7 +253,7 @@
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || "Upload failed"); }
       const upData = await res.json();
 
-      setUploadState("processing", "Fetching complete dashboard…", 96);
+      setUploadState("processing", "Fetching complete dashboard…", 97);
       const dashRes = await fetch(`${API_BASE}/api/dashboard/${upData.file_id}`, {
         headers: { Authorization: `Bearer ${state.session.access_token}` },
       });
@@ -240,10 +269,6 @@
     }
   }
 
-  // ── FORMATTERS ───────────────────────────────────────────────────────────────
-  const fmtINR = v => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(v || 0);
-  const fmtNum = v => new Intl.NumberFormat("en-IN").format(v || 0);
-
   // ── DASHBOARD RENDER ─────────────────────────────────────────────────────────
   function renderDashboard() {
     const d = state.dashboardData;
@@ -255,11 +280,18 @@
     const stressInd = d.stress_indicators || {};
     const beh = d.behavioral_insights || {};
     const ci = d.charts || {};
+    const recon = d.reconciliation || {};
 
-    // ── Title & Period ────────────────────────────────────────────────────────
+    // ── Currency ────────────────────────────────────────────────────────────────
+    state.currency = d.currency || { code: "INR", symbol: "₹", locale: "en-IN" };
+    fmt = buildFormatter(state.currency);
+
     const el = id => document.getElementById(id);
-    el("dashTitle").textContent = `Financial Overview`;
-    el("dashboardSubtitle").textContent = `Deep analysis of ${d.filename || "your statement"}`;
+
+    // ── Title ──────────────────────────────────────────────────────────────────
+    el("dashboardSubtitle").textContent = `Deep analysis · ${d.filename || "statement"}`;
+    const cs = el("chartSubtitle");
+    if (cs) cs.textContent = `Monthly breakdown — all values in ${state.currency.code} (${state.currency.symbol})`;
 
     if (profile.statement_from || profile.statement_to) {
       const pb = el("dashPeriodBadge");
@@ -272,14 +304,15 @@
     if (profile.account_holder_name || profile.bank_name) {
       profileSec.style.display = "block";
       const name = profile.account_holder_name || "Account Holder";
-      const initials = name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
-      el("profileAvatar").textContent = initials;
+      el("profileAvatar").textContent = name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
       el("profileName").textContent = name;
       el("profileBank").textContent = [profile.bank_name, profile.account_number_masked].filter(Boolean).join(" · ") || "—";
       el("profileAccType").textContent = profile.account_type || "—";
       el("profileIFSC").textContent = profile.ifsc || "—";
       el("profilePeriod").textContent = [profile.statement_from, profile.statement_to].filter(Boolean).join(" → ") || "—";
       el("profileIncomeType").textContent = incomeProfile.income_consistency || incomeProfile.primary_frequency || "—";
+      const pCur = el("profileCurrency");
+      if (pCur) pCur.textContent = `${state.currency.symbol} ${state.currency.code}  (${state.currency.detected_from || "detected"})`;
     }
 
     // ── KPIs ──────────────────────────────────────────────────────────────────
@@ -287,40 +320,47 @@
     const expenses = k.total_expenses ?? k.expenses ?? 0;
     const savings = k.net_savings ?? k.savings ?? 0;
 
-    el("dashIncome").textContent = fmtINR(income);
+    el("dashIncome").textContent = fmt(income);
     el("dashIncomeSource").textContent = incomeProfile.primary_source
       ? `${incomeProfile.primary_source} · ${incomeProfile.primary_frequency || "monthly"}`
       : `${fmtNum(k.transaction_count || 0)} transactions`;
 
-    el("dashExpenses").textContent = fmtINR(expenses);
+    el("dashExpenses").textContent = fmt(expenses);
     el("dashFixedVar").textContent = k.fixed_ratio_pct != null
-      ? `Fixed ${k.fixed_ratio_pct}% · Variable ${k.variable_ratio_pct ?? (100 - k.fixed_ratio_pct)}%`
+      ? `Fixed ${k.fixed_ratio_pct}% · Var ${k.variable_ratio_pct ?? (100 - k.fixed_ratio_pct)}%`
       : "—";
 
-    el("dashNet").textContent = fmtINR(savings);
+    el("dashNet").textContent = fmt(savings);
     el("dashNet").style.color = savings >= 0 ? "var(--green)" : "var(--red)";
-    el("dashSavingsRate").textContent = k.savings_rate_pct != null ? `${k.savings_rate_pct}% savings rate` : "—";
+    el("dashSavingsRate").textContent = k.savings_rate_pct != null
+      ? `${k.savings_rate_pct.toFixed(2)}% savings rate`
+      : "—";
 
-    el("dashInvest").textContent = fmtINR(k.investment_total ?? 0);
-    el("dashInvestRate").textContent = k.investment_rate_pct != null ? `${k.investment_rate_pct}% of income` : "No investments detected";
+    el("dashInvest").textContent = fmt(k.investment_total ?? 0);
+    el("dashInvestRate").textContent = k.investment_rate_pct != null
+      ? `${k.investment_rate_pct.toFixed(2)}% of income`
+      : "No investments detected";
 
-    el("dashEMI").textContent = fmtINR(k.emi_total ?? 0);
-    if (k.emi_total && income > 0) {
-      const emiratio = ((k.emi_total / income) * 100).toFixed(0);
-      el("dashEMIRatio").textContent = `${emiratio}% of income`;
-      el("dashEMIRatio").style.color = emiratio > 40 ? "var(--red)" : emiratio > 30 ? "var(--yellow)" : "var(--fg-muted)";
+    el("dashEMI").textContent = fmt(k.emi_total ?? 0);
+    if ((k.emi_total ?? 0) > 0 && income > 0) {
+      const r = ((k.emi_total / income) * 100).toFixed(1);
+      el("dashEMIRatio").textContent = `${r}% of income`;
+      el("dashEMIRatio").style.color = r > 40 ? "var(--red)" : r > 30 ? "var(--yellow)" : "var(--fg-muted)";
     }
 
     el("dashTxCount").textContent = fmtNum(k.transaction_count ?? 0);
     el("dashCashPct").textContent = k.cash_reliance_pct != null
-      ? `${k.cash_reliance_pct}% cash reliance`
-      : `UPI: ${fmtINR(k.upi_spend ?? 0)}`;
+      ? `${k.cash_reliance_pct.toFixed(1)}% cash reliance`
+      : `UPI: ${fmt(k.upi_spend ?? 0)}`;
 
     // ── AI Summary ────────────────────────────────────────────────────────────
     if (d.ai_summary) {
       el("aiSummaryCard").style.display = "block";
       el("aiSummaryText").textContent = d.ai_summary;
     }
+
+    // ── Reconciliation ────────────────────────────────────────────────────────
+    renderReconciliation(recon, income, expenses);
 
     // ── Charts ────────────────────────────────────────────────────────────────
     setupTrendChart(ci.monthly_flow);
@@ -343,39 +383,112 @@
     bindTxFilters();
   }
 
-  // ── CHARTS ──────────────────────────────────────────────────────────────────
-  const CHART_DEFAULTS = () => {
-    Chart.defaults.color = "#7a7a8a";
-    Chart.defaults.borderColor = "hsla(0,0%,100%,0.06)";
-    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
-  };
+  // ── RECONCILIATION ───────────────────────────────────────────────────────────
+  function renderReconciliation(recon, income, expenses) {
+    const section = document.getElementById("reconciliationSection");
+    const card = document.getElementById("reconCard");
+    if (!section || !card) return;
 
-  const PALETTE = [
-    "#e85d26", "#3b82f6", "#22c55e", "#a855f7", "#f59e0b",
-    "#06b6d4", "#ec4899", "#84cc16", "#f97316", "#6366f1",
-    "#14b8a6", "#ef4444",
-  ];
+    if (!recon || !Object.keys(recon).length) {
+      // CSV/XLS — compute-only, show medium confidence
+      section.style.display = "block";
+      card.className = "recon-card neutral";
+      document.getElementById("reconIcon").textContent = "📊";
+      document.getElementById("reconStatus").textContent = "Computed from Transactions";
+      document.getElementById("reconDetail").textContent =
+        `Totals: ${fmt(income)} in / ${fmt(expenses)} out. No statement summary to cross-check (CSV source — statement anchors not available).`;
+      document.getElementById("reconConfidence").textContent = "Medium Confidence";
+      document.getElementById("reconConfidence").style.color = "var(--yellow)";
+      document.getElementById("reconChecks").innerHTML = "";
+      return;
+    }
 
+    section.style.display = "block";
+    const isOk = recon.status === "verified";
+    card.className = `recon-card ${isOk ? "verified" : recon.has_statement_anchors ? "mismatch" : "neutral"}`;
+
+    document.getElementById("reconIcon").textContent = isOk ? "✅" : recon.has_statement_anchors ? "⚠️" : "📊";
+
+    const confColor = { High: "var(--green)", Medium: "var(--yellow)", Low: "var(--red)" }[recon.confidence] || "var(--fg-muted)";
+    document.getElementById("reconConfidence").textContent = `${recon.confidence || "Medium"} Confidence`;
+    document.getElementById("reconConfidence").style.color = confColor;
+
+    if (isOk && recon.has_statement_anchors) {
+      document.getElementById("reconStatus").textContent = "✓ Data Verified";
+      document.getElementById("reconStatus").style.color = "var(--green)";
+      document.getElementById("reconDetail").textContent =
+        `All computed totals match the statement printed figures. ${recon.opening_balance != null ? `Opening ${fmt(recon.opening_balance)} → Closing ${fmt(recon.closing_balance)}.` : ""}`;
+    } else if (!recon.has_statement_anchors) {
+      document.getElementById("reconStatus").textContent = "Computed — No Statement Anchors";
+      document.getElementById("reconStatus").style.color = "var(--fg-muted)";
+      document.getElementById("reconDetail").textContent =
+        `Computed from transactions. Statement summary totals not found in PDF. Net: ${fmt(income - expenses)}.`;
+    } else {
+      document.getElementById("reconStatus").textContent = "⚠️ Mismatch Detected";
+      document.getElementById("reconStatus").style.color = "var(--yellow)";
+      document.getElementById("reconDetail").textContent =
+        `Some totals differ from statement values. Review highlighted discrepancies. ` +
+        (recon.issues?.length ? recon.issues[0] : "");
+    }
+
+    // Detail checks
+    const checksEl = document.getElementById("reconChecks");
+    if (checksEl && recon.checks?.length) {
+      checksEl.innerHTML = recon.checks
+        .filter(c => c.status !== "skipped")
+        .map(c => {
+          const dot = c.status === "matched" ? "var(--green)" : "var(--red)";
+          return `<div class="recon-check-item">
+            <div class="recon-check-dot" style="background:${dot}"></div>
+            <span>${c.label}: ${c.status === "matched" ? "✓" : `Δ${(c.diff || 0).toFixed(2)}`}</span>
+          </div>`;
+        }).join("");
+    }
+  }
+
+  // ── VALORANT-STYLE TREND CHART ────────────────────────────────────────────────
   function setupTrendChart(flow) {
-    const ctx = document.getElementById("trendChart");
-    if (!ctx || !flow || !flow.labels?.length) return;
+    const canvas = document.getElementById("trendChart");
+    if (!canvas || !flow?.labels?.length) return;
     if (state.charts.trend) state.charts.trend.destroy();
-    CHART_DEFAULTS();
+
+    Chart.defaults.color = "#6a6a7a";
+    Chart.defaults.borderColor = "hsla(0,0%,100%,0.05)";
+    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+
+    const ctx = canvas.getContext("2d");
+
+    // Gradient fills — the Valorant signature
+    function makeGrad(r, g, b) {
+      const h = canvas.offsetHeight || 300;
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, `rgba(${r},${g},${b},0.40)`);
+      grad.addColorStop(0.5, `rgba(${r},${g},${b},0.12)`);
+      grad.addColorStop(1, `rgba(${r},${g},${b},0.00)`);
+      return grad;
+    }
 
     const labels = flow.labels;
     const incomeData = flow.income || [];
     const expData = flow.expenses || [];
     const savingsData = flow.savings || incomeData.map((v, i) => v - (expData[i] || 0));
 
-    // Render legend
+    // Render custom legend
     const legend = document.getElementById("trendLegend");
-    if (legend) legend.innerHTML = [
-      { color: "#22c55e", label: "Income" },
-      { color: "#ef4444", label: "Expenses" },
-      { color: "#e85d26", label: "Savings" },
-    ].map(l => `<div class="legend-item"><div class="legend-dot" style="background:${l.color}"></div>${l.label}</div>`).join("");
+    if (legend) {
+      legend.innerHTML = [
+        { color: "#22c55e", label: "Income" },
+        { color: "#ff4655", label: "Expenses" },
+        { color: "#e85d26", label: "Savings" },
+      ].map(l =>
+        `<div class="legend-item">
+          <svg width="18" height="4" style="flex-shrink:0"><line x1="0" y1="2" x2="18" y2="2" stroke="${l.color}" stroke-width="2.5" stroke-linecap="round"/></svg>
+          ${l.label}
+        </div>`
+      ).join("");
+    }
 
-    state.charts.trend = new Chart(ctx, {
+    state.charts.trend = new Chart(canvas, {
       type: "line",
       data: {
         labels,
@@ -384,44 +497,47 @@
             label: "Income",
             data: incomeData,
             borderColor: "#22c55e",
-            backgroundColor: "hsla(142,70%,48%,0.08)",
+            backgroundColor: makeGrad(34, 197, 94),
             borderWidth: 2.5,
-            pointRadius: 5,
+            pointRadius: 4,
             pointHoverRadius: 8,
             pointBackgroundColor: "#22c55e",
             pointBorderColor: "#030305",
             pointBorderWidth: 2,
-            fill: true,
-            tension: 0.4,
+            fill: "origin",
+            tension: 0.42,
+            order: 3,
           },
           {
             label: "Expenses",
             data: expData,
-            borderColor: "#ef4444",
-            backgroundColor: "hsla(0,72%,55%,0.08)",
+            borderColor: "#ff4655",
+            backgroundColor: makeGrad(255, 70, 85),
             borderWidth: 2.5,
-            pointRadius: 5,
+            pointRadius: 4,
             pointHoverRadius: 8,
-            pointBackgroundColor: "#ef4444",
+            pointBackgroundColor: "#ff4655",
             pointBorderColor: "#030305",
             pointBorderWidth: 2,
-            fill: true,
-            tension: 0.4,
+            fill: "origin",
+            tension: 0.42,
+            order: 2,
           },
           {
             label: "Net Savings",
             data: savingsData,
             borderColor: "#e85d26",
-            backgroundColor: "hsla(24,90%,52%,0.08)",
+            backgroundColor: makeGrad(232, 93, 38),
             borderWidth: 2,
-            borderDash: [6, 3],
+            borderDash: [0, 0],
             pointRadius: 4,
             pointHoverRadius: 7,
             pointBackgroundColor: "#e85d26",
             pointBorderColor: "#030305",
             pointBorderWidth: 2,
-            fill: false,
-            tension: 0.4,
+            fill: "origin",
+            tension: 0.42,
+            order: 1,
           },
         ],
       },
@@ -429,42 +545,61 @@
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: "index", intersect: false },
+        animation: { duration: 900, easing: "easeInOutQuart" },
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: "hsla(240,6%,10%,0.95)",
-            borderColor: "hsla(0,0%,100%,0.1)",
+            backgroundColor: "rgba(10,10,15,0.97)",
+            borderColor: "rgba(255,255,255,0.12)",
             borderWidth: 1,
-            padding: 14,
-            titleFont: { family: "'Space Grotesk', sans-serif", weight: "700", size: 13 },
+            padding: { top: 12, bottom: 12, left: 16, right: 16 },
+            titleFont: { family: "'Space Grotesk',sans-serif", weight: "700", size: 13 },
             bodyFont: { size: 13 },
+            caretSize: 6,
             callbacks: {
-              label: ctx => ` ${ctx.dataset.label}: ${fmtINR(ctx.parsed.y)}`,
+              title: items => items[0]?.label || "",
+              label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`,
+              afterBody: items => {
+                const inc = items.find(i => i.dataset.label === "Income")?.parsed.y || 0;
+                const exp = items.find(i => i.dataset.label === "Expenses")?.parsed.y || 0;
+                const rate = inc > 0 ? ((inc - exp) / inc * 100).toFixed(1) : 0;
+                return [`  Savings Rate: ${rate}%`];
+              },
             },
           },
         },
         scales: {
           x: {
-            grid: { color: "hsla(0,0%,100%,0.04)" },
-            ticks: { font: { size: 12 } },
+            grid: { color: "rgba(255,255,255,0.04)", tickColor: "transparent" },
+            ticks: { font: { size: 11 }, color: "#5a5a6a", maxRotation: 0 },
+            border: { color: "rgba(255,255,255,0.06)" },
           },
           y: {
-            grid: { color: "hsla(0,0%,100%,0.04)" },
+            grid: { color: "rgba(255,255,255,0.04)", tickColor: "transparent" },
             ticks: {
-              font: { size: 12 },
-              callback: v => "₹" + (v >= 100000 ? (v / 100000).toFixed(1) + "L" : v >= 1000 ? (v / 1000).toFixed(0) + "k" : v),
+              font: { size: 11 }, color: "#5a5a6a",
+              callback: v => {
+                const n = Math.abs(v);
+                if (n >= 10000000) return (v / 10000000).toFixed(1) + "Cr";
+                if (n >= 100000) return (v / 100000).toFixed(1) + "L";
+                if (n >= 1000) return (v / 1000).toFixed(0) + "k";
+                return state.currency.symbol + v;
+              },
             },
+            border: { color: "rgba(255,255,255,0.06)" },
           },
         },
       },
     });
   }
 
+  // ── DONUT ────────────────────────────────────────────────────────────────────
+  const PALETTE = ["#e85d26","#3b82f6","#22c55e","#a855f7","#f59e0b","#06b6d4","#ec4899","#84cc16","#f97316","#6366f1","#14b8a6","#ef4444"];
+
   function setupDonutChart(breakdown) {
     const ctx = document.getElementById("donutChart");
     if (!ctx || !breakdown?.length) return;
     if (state.charts.donut) state.charts.donut.destroy();
-    CHART_DEFAULTS();
     const top = breakdown.slice(0, 10);
     state.charts.donut = new Chart(ctx, {
       type: "doughnut",
@@ -473,27 +608,20 @@
         datasets: [{
           data: top.map(b => b.amount),
           backgroundColor: PALETTE.slice(0, top.length),
-          borderWidth: 2,
-          borderColor: "#030305",
-          hoverOffset: 6,
+          borderWidth: 2, borderColor: "#030305", hoverOffset: 8,
         }],
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: "68%",
+        responsive: true, maintainAspectRatio: false, cutout: "68%",
+        animation: { duration: 800, easing: "easeInOutQuart" },
         plugins: {
           legend: {
             position: "right",
-            labels: { font: { size: 12 }, padding: 14, usePointStyle: true, pointStyleWidth: 10 },
+            labels: { font: { size: 11 }, padding: 12, usePointStyle: true, pointStyleWidth: 8, color: "#7a7a8a" },
           },
           tooltip: {
-            backgroundColor: "hsla(240,6%,10%,0.95)",
-            borderColor: "hsla(0,0%,100%,0.1)",
-            borderWidth: 1,
-            callbacks: {
-              label: ctx => ` ${fmtINR(ctx.parsed)} (${breakdown[ctx.dataIndex]?.pct || 0}%)`,
-            },
+            backgroundColor: "rgba(10,10,15,0.97)", borderColor: "rgba(255,255,255,0.12)", borderWidth: 1,
+            callbacks: { label: ctx => ` ${fmt(ctx.parsed)} (${breakdown[ctx.dataIndex]?.pct || 0}%)` },
           },
         },
       },
@@ -504,7 +632,6 @@
     const ctx = document.getElementById("paymentChart");
     if (!ctx || !paymentDist?.length) return;
     if (state.charts.payment) state.charts.payment.destroy();
-    CHART_DEFAULTS();
     state.charts.payment = new Chart(ctx, {
       type: "bar",
       data: {
@@ -514,26 +641,21 @@
           data: paymentDist.map(p => p.count),
           backgroundColor: PALETTE.map(c => c + "cc"),
           borderColor: PALETTE,
-          borderWidth: 1,
-          borderRadius: 6,
+          borderWidth: 1, borderRadius: 6,
         }],
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        indexAxis: "y",
+        responsive: true, maintainAspectRatio: false, indexAxis: "y",
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: "hsla(240,6%,10%,0.95)",
-            borderColor: "hsla(0,0%,100%,0.1)",
-            borderWidth: 1,
+            backgroundColor: "rgba(10,10,15,0.97)", borderColor: "rgba(255,255,255,0.12)", borderWidth: 1,
             callbacks: { label: ctx => ` ${ctx.parsed.x} transactions (${paymentDist[ctx.dataIndex]?.pct || 0}%)` },
           },
         },
         scales: {
-          x: { grid: { color: "hsla(0,0%,100%,0.04)" }, ticks: { font: { size: 11 } } },
-          y: { grid: { display: false }, ticks: { font: { size: 11 } } },
+          x: { grid: { color: "rgba(255,255,255,0.04)" }, ticks: { font: { size: 11 }, color: "#5a5a6a" } },
+          y: { grid: { display: false }, ticks: { font: { size: 11 }, color: "#5a5a6a" } },
         },
       },
     });
@@ -547,11 +669,11 @@
       <div class="merchant-row">
         <span class="merchant-name">${m.merchant}</span>
         <div class="merchant-bar-wrap"><div class="merchant-bar" style="width:${Math.round(m.amount / max * 100)}%"></div></div>
-        <span class="merchant-amt">${fmtINR(m.amount)}</span>
+        <span class="merchant-amt">${fmt(m.amount)}</span>
       </div>`).join("");
   }
 
-  // ── INSIGHTS RENDERERS ───────────────────────────────────────────────────────
+  // ── INSIGHTS RENDERERS ────────────────────────────────────────────────────────
   function renderLeaks(leaks) {
     const el = document.getElementById("leaksList");
     if (!leaks.length) { el.innerHTML = `<p class="text-muted" style="font-size:14px">✅ No significant leaks detected.</p>`; return; }
@@ -562,18 +684,14 @@
         <div class="leak-body">
           <div class="leak-title">${l.title}</div>
           <div class="leak-detail">${l.detail}</div>
-          ${l.estimated_monthly_impact_inr ? `<div class="leak-impact">Impact: ${fmtINR(l.estimated_monthly_impact_inr)}</div>` : ""}
+          ${l.estimated_monthly_impact_inr ? `<div class="leak-impact">Impact: ${fmt(l.estimated_monthly_impact_inr)}</div>` : ""}
         </div>
       </div>`).join("");
   }
 
   function renderSuggestions(suggestions) {
     const el = document.getElementById("suggestionsList");
-    const all = [
-      ...(suggestions.quick_wins || []),
-      ...(suggestions.monthly_optimization || []),
-      ...(suggestions.long_term || []),
-    ];
+    const all = [...(suggestions.quick_wins || []), ...(suggestions.monthly_optimization || []), ...(suggestions.long_term || [])];
     if (!all.length) { el.innerHTML = `<p class="text-muted" style="font-size:14px">Upload a statement to see personalized suggestions.</p>`; return; }
     el.innerHTML = all.map(s => `
       <div class="suggestion-card">
@@ -581,7 +699,7 @@
           <div class="suggestion-bucket">${s.bucket || ""}</div>
           <div class="suggestion-title">${s.title}</div>
           <div class="suggestion-detail">${s.detail}</div>
-          ${s.impact_inr_month_estimate ? `<div class="suggestion-impact">Save ~${fmtINR(s.impact_inr_month_estimate)}/mo</div>` : ""}
+          ${s.impact_inr_month_estimate ? `<div class="suggestion-impact">Save ~${fmt(s.impact_inr_month_estimate)}/mo</div>` : ""}
         </div>
       </div>`).join("");
   }
@@ -590,14 +708,13 @@
     const el = document.getElementById("recurringList");
     if (!recurring.length) { el.innerHTML = `<p class="text-muted" style="font-size:14px">No recurring patterns detected.</p>`; return; }
     el.innerHTML = recurring.slice(0, 10).map(r => {
-      const typeColor = r.is_investment ? "var(--green)" : r.is_subscription ? "var(--purple)" : "var(--accent)";
-      const typeLabel = r.is_investment ? "Investment" : r.is_subscription ? "Subscription" : "Recurring";
-      return `
-      <div class="recurring-card">
+      const c = r.is_investment ? "var(--green)" : r.is_subscription ? "var(--purple)" : "var(--accent)";
+      const lbl = r.is_investment ? "Investment" : r.is_subscription ? "Subscription" : "Recurring";
+      return `<div class="recurring-card">
         <div class="leak-body">
           <div class="recurring-merchant">${r.merchant}</div>
-          <div class="recurring-meta">~${fmtINR(r.avg_amount)} · ${r.occurrences}× over ${r.months_spanned} month${r.months_spanned > 1 ? "s" : ""}</div>
-          <span class="recurring-badge" style="background:${typeColor}22;color:${typeColor}">${typeLabel}</span>
+          <div class="recurring-meta">~${fmt(r.avg_amount)} · ${r.occurrences}× over ${r.months_spanned} month${r.months_spanned !== 1 ? "s" : ""}</div>
+          <span class="recurring-badge" style="background:${c}22;color:${c}">${lbl}</span>
         </div>
       </div>`;
     }).join("");
@@ -606,31 +723,29 @@
   function renderBehavioral(beh, stressInd, k) {
     const el = document.getElementById("behavioralPanel");
     if (!Object.keys(beh).length && !Object.keys(stressInd).length) {
-      el.innerHTML = `<p class="text-muted" style="font-size:14px">Behavioral data extracted from PDF only.</p>`;
+      el.innerHTML = `<p class="text-muted" style="font-size:14px">Behavioral data extracted from PDF statements only.</p>`;
       return;
     }
+    const stressCount = (stressInd.overdraft_events || 0) + (stressInd.bounced_transactions || 0) + (stressInd.late_payment_fees || 0);
     const items = [
-      { label: "Post-Payday Splurge", val: beh.post_payday_splurge ? "⚠️ Detected" : "✅ Not detected", color: beh.post_payday_splurge ? "var(--yellow)" : "var(--green)" },
-      { label: "Cash Reliance", val: `${beh.cash_reliance_pct ?? k?.cash_reliance_pct ?? 0}%`, color: (beh.cash_reliance_pct ?? 0) > 20 ? "var(--yellow)" : "var(--green)" },
-      { label: "Stress Events", val: stressInd.overdraft_events != null ? `${(stressInd.overdraft_events || 0) + (stressInd.bounced_transactions || 0) + (stressInd.late_payment_fees || 0)} events` : "0 events", color: stressInd.overdraft_events ? "var(--red)" : "var(--green)" },
-      { label: "Income Stability", val: beh.spending_pattern ? beh.spending_pattern.slice(0, 50) + (beh.spending_pattern.length > 50 ? "…" : "") : "—" },
+      { label: "Post-Payday Splurge", val: beh.post_payday_splurge ? "⚠️ Detected" : "✅ Clean", color: beh.post_payday_splurge ? "var(--yellow)" : "var(--green)" },
+      { label: "Cash Reliance", val: `${(beh.cash_reliance_pct ?? k?.cash_reliance_pct ?? 0).toFixed(1)}%`, color: (beh.cash_reliance_pct ?? 0) > 20 ? "var(--yellow)" : "var(--green)" },
+      { label: "Stress Events", val: `${stressCount} events`, color: stressCount > 0 ? "var(--red)" : "var(--green)" },
+      { label: "Income Pattern", val: (beh.spending_pattern || "—").slice(0, 50) + (beh.spending_pattern?.length > 50 ? "…" : "") },
     ];
-
-    const topVendors = beh.top_vendors?.length
+    const vendors = beh.top_vendors?.length
       ? `<div class="beh-item" style="grid-column:1/-1"><div class="beh-label">Top Vendors</div><div class="beh-val" style="font-size:13px;font-weight:500;white-space:normal">${beh.top_vendors.slice(0, 5).join(" · ")}</div></div>`
       : "";
-
     el.innerHTML = `<div class="behavioral-grid">
       ${items.map(i => `<div class="beh-item"><div class="beh-label">${i.label}</div><div class="beh-val" style="color:${i.color || "var(--fg)"}">${i.val}</div></div>`).join("")}
-      ${topVendors}
+      ${vendors}
     </div>`;
-
     if (stressInd.notes) {
-      el.innerHTML += `<div style="margin-top:10px;padding:10px 12px;background:hsla(0,72%,55%,0.08);border-radius:var(--radius);font-size:13px;color:var(--fg-muted)">${stressInd.notes}</div>`;
+      el.innerHTML += `<div style="margin-top:10px;padding:10px 12px;background:hsla(0,72%,55%,0.08);border-radius:var(--radius);font-size:13px;color:var(--fg-muted);line-height:1.5">${stressInd.notes}</div>`;
     }
   }
 
-  // ── TRANSACTION TABLE ────────────────────────────────────────────────────────
+  // ── TRANSACTION TABLE ─────────────────────────────────────────────────────────
   function buildCategoryFilter(txs) {
     const cats = [...new Set(txs.map(t => t.category).filter(Boolean))].sort();
     const sel = document.getElementById("txFilterCat");
@@ -639,9 +754,9 @@
   }
 
   function bindTxFilters() {
-    ["txFilterFlow", "txFilterCat", "txSearch"].forEach(id => {
-      document.getElementById(id)?.addEventListener("input", applyTxFilters);
-    });
+    ["txFilterFlow", "txFilterCat", "txSearch"].forEach(id =>
+      document.getElementById(id)?.addEventListener("input", applyTxFilters)
+    );
   }
 
   function applyTxFilters() {
@@ -680,12 +795,13 @@
         t.is_recurring ? `<span class="tx-flag" title="Recurring">🔁</span>` : "",
         t.stress_flag ? `<span class="tx-flag" title="Stress">⚠️</span>` : "",
       ].join("");
+      const sign = t.flow === "credit" ? "+" : "-";
       return `<tr>
         <td style="color:var(--fg-muted);font-size:12px">${t.date}</td>
         <td><div class="tx-merchant" title="${t.merchant_raw || t.merchant}">${t.merchant}</div></td>
         <td><span class="tx-cat-badge">${t.category}</span></td>
         <td style="color:var(--fg-muted);font-size:12px">${t.payment_method}</td>
-        <td class="${t.flow === "credit" ? "tx-amount-credit" : "tx-amount-debit"}">${t.flow === "credit" ? "+" : "-"}${fmtINR(t.amount)}</td>
+        <td class="${t.flow === "credit" ? "tx-amount-credit" : "tx-amount-debit"}">${sign}${fmt(t.amount)}</td>
         <td>${flags || "—"}</td>
       </tr>`;
     }).join("");
@@ -701,11 +817,15 @@
     if (totalPages > 7) btns += `<span style="color:var(--fg-muted);font-size:13px">…${totalPages} pages</span>`;
     pag.innerHTML = btns;
     pag.querySelectorAll(".page-btn").forEach(btn => {
-      btn.addEventListener("click", () => { state.txPage = parseInt(btn.dataset.page); renderTxTable(); window.scrollTo({ top: document.getElementById("txTable").offsetTop - 80, behavior: "smooth" }); });
+      btn.addEventListener("click", () => {
+        state.txPage = parseInt(btn.dataset.page);
+        renderTxTable();
+        window.scrollTo({ top: document.getElementById("txTable").offsetTop - 80, behavior: "smooth" });
+      });
     });
   }
 
-  // ── BOOT ─────────────────────────────────────────────────────────────────────
+  // ── BOOT ──────────────────────────────────────────────────────────────────────
   async function boot() {
     if (supabase) {
       const { data } = await supabase.auth.getSession();

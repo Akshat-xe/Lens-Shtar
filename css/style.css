@@ -1252,3 +1252,107 @@ a {
     border-bottom: none;
   }
 }
+
+/* ── Reconciliation Card ────────────────────────────────────── */
+.recon-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 22px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong);
+  backdrop-filter: blur(16px);
+  flex-wrap: wrap;
+}
+
+.recon-card.verified {
+  background: hsla(142, 70%, 48%, 0.06);
+  border-color: hsla(142, 70%, 48%, 0.25);
+}
+
+.recon-card.mismatch {
+  background: hsla(0, 72%, 55%, 0.06);
+  border-color: hsla(0, 72%, 55%, 0.25);
+}
+
+.recon-card.neutral {
+  background: var(--panel-bg);
+  border-color: var(--border-strong);
+}
+
+.recon-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.recon-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.recon-status {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.recon-detail {
+  font-size: 13px;
+  color: var(--fg-muted);
+  line-height: 1.5;
+  max-width: 500px;
+}
+
+.recon-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.recon-confidence {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.recon-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+.recon-check-item {
+  font-size: 11px;
+  color: var(--fg-muted);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.recon-check-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Currency Value Badge ────────────────────────────────────── */
+.currency-val {
+  color: var(--accent) !important;
+  font-weight: 700;
+}
+
+/* ── Valorant-style chart height ────────────────────────────── */
+.chart-trend-wrap .chart-body {
+  position: relative;
+  height: clamp(260px, 26vw, 360px) !important;
+}
