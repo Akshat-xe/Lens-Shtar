@@ -72,8 +72,8 @@ def get_settings() -> Settings:
         session_inactivity_seconds=inactive,
         video_placeholder_enabled=_env_bool("VIDEO_PLACEHOLDER_ENABLED", True),
         max_upload_bytes=max_upload,
-        gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash").strip()
-        or "gemini-2.0-flash",
+        gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
+        or "gemini-2.5-flash",
         gemini_timeout_seconds=gemini_timeout,
         gemini_ai_summary_enabled=_env_bool("GEMINI_AI_SUMMARY_ENABLED", True),
     )

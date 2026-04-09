@@ -54,7 +54,17 @@ async def run_upload_pipeline(
         gemini_used_for_pdf = True
         try:
             raw_rows = await extract_transactions_from_pdf(api_key, content, settings)
-        except GeminiHttpError:
+        except GeminiHttpError as e:
+            # On 429 from PDF extraction — we cannot proceed without Gemini for PDFs.
+            # Give user actionable advice and a hint to use CSV instead.
+            if e.status_code == 429:
+                print(f"[pipeline] PDF extraction blocked by Gemini 429. Propagating to client.")
+                raise GeminiHttpError(
+                    429,
+                    "Gemini rate limit hit while reading your PDF. "
+                    "Wait 60 seconds and retry, or export your statement as CSV/XLS and upload that — "
+                    "CSV files are processed locally without any Gemini quota."
+                ) from e
             raise
         except ValueError as e:
             raise BadInputError(str(e)) from e
@@ -93,9 +103,12 @@ async def run_upload_pipeline(
         try:
             ai_summary = await generate_ai_summary(api_key, facts, settings)
         except GeminiHttpError as e:
+            # AI summary is optional — always fall back to rule-based, never fail the upload.
+            print(f"[pipeline] AI summary failed ({e.status_code}): {e.message} — using rule-based fallback.")
             ai_summary_error = e.message
             ai_summary = rule_based_fallback_summary(normalized, engine_out["kpis"])
-        except Exception:
+        except Exception as e:
+            print(f"[pipeline] AI summary unexpected error: {e} — using rule-based fallback.")
             ai_summary_error = "AI summary unavailable. Showing rule-based summary instead."
             ai_summary = rule_based_fallback_summary(normalized, engine_out["kpis"])
     else:
