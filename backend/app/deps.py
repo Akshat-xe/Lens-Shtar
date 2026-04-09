@@ -18,23 +18,12 @@ def get_current_user(
     creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
     settings: Annotated[Settings, Depends(get_settings_dep)],
 ) -> SupabaseUser:
-    if creds is None:
-        print("Auth failed: creds is None")
+    if creds is None or creds.scheme.lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated (no creds)",
+            detail="Not authenticated",
         )
-    if creds.scheme.lower() != "bearer":
-        print(f"Auth failed: invalid scheme {creds.scheme}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated (wrong scheme)",
-        )
-    try:
-        user = verify_supabase_jwt(creds.credentials, settings)
-    except HTTPException as e:
-        print(f"Auth failed from verify_supabase_jwt: {e.detail}")
-        raise
+    user = verify_supabase_jwt(creds.credentials, settings)
     # Extend inactivity window on any authenticated request
     session_store.touch_user(user.user_id)
     return user

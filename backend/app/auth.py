@@ -1,3 +1,15 @@
+"""
+auth.py — Supabase JWT verification via JWKS (ES256 + HS256 supported).
+
+Supabase now signs tokens with ES256 (asymmetric ECDSA). We fetch their
+public JWKS endpoint once, cache the client, and use it to verify every token.
+The old SUPABASE_JWT_SECRET env var is kept as a HS256 fallback for legacy
+project setups, but is NOT required for ES256 projects.
+"""
+
+from __future__ import annotations
+
+import functools
 from dataclasses import dataclass
 
 import jwt
@@ -11,62 +23,97 @@ class SupabaseUser:
     user_id: str
 
 
-def verify_supabase_jwt(token: str, settings: Settings) -> SupabaseUser:
-    if not settings.supabase_jwt_secret:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server misconfigured: SUPABASE_JWT_SECRET is not set",
-        )
-    unverified_header = jwt.get_unverified_header(token)
-    alg = unverified_header.get("alg", "HS256")
-    print(f"Token header alg is: {alg}")
+@functools.lru_cache(maxsize=1)
+def _get_jwks_client(supabase_url: str) -> jwt.PyJWKClient:
+    """Cached JWKS client — fetched once from Supabase's public endpoint."""
+    jwks_url = f"{supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
+    print(f"[auth] Fetching JWKS from: {jwks_url}")
+    return jwt.PyJWKClient(jwks_url, cache_keys=True)
 
-    decode_kw: dict = {
-        "algorithms": ["HS256", alg],
-        "options": {"require": ["exp", "sub"]},
+
+def verify_supabase_jwt(token: str, settings: Settings) -> SupabaseUser:
+    """
+    Verify a Supabase-issued JWT.
+
+    Strategy:
+      1. Try JWKS-based verification (ES256, RS256 — asymmetric keys from Supabase).
+         This is the correct method for all modern Supabase projects.
+      2. Fallback to HS256 with SUPABASE_JWT_SECRET for legacy projects that
+         have not migrated to asymmetric signing.
+    """
+    decode_opts = {
+        "options": {
+            "require": ["exp", "sub"],
+        },
         "leeway": 10,
     }
-    if settings.supabase_jwt_audience:
-        decode_kw["audience"] = settings.supabase_jwt_audience
-    else:
-        decode_kw["options"] = {**decode_kw["options"], "verify_aud": False}
 
+    # Set audience only if configured
+    if settings.supabase_jwt_audience:
+        decode_opts["audience"] = settings.supabase_jwt_audience
+    else:
+        decode_opts["options"]["verify_aud"] = False  # type: ignore[index]
+
+    # ── Strategy 1: JWKS (ES256 / RS256 — modern Supabase) ──────────────────
     try:
-        payload = jwt.decode(token, settings.supabase_jwt_secret, **decode_kw)
-    except jwt.InvalidSignatureError:
-        # Fallback to base64 decoded secret if the plain string fails.
-        import base64
-        try:
-            decoded_secret = base64.b64decode(settings.supabase_jwt_secret)
-            payload = jwt.decode(token, decoded_secret, **decode_kw)
-        except Exception as fallback_exc:
-            print(f"Fallback base64 decode failed: {str(fallback_exc)}")
-            raise jwt.InvalidSignatureError("Signature verification failed with both plain and base64 secret") from fallback_exc
+        jwks_client = _get_jwks_client(settings.supabase_url)
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+        payload = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["ES256", "RS256"],
+            **decode_opts,
+        )
+        sub = payload.get("sub")
+        if not sub or not isinstance(sub, str):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token: missing subject",
+            )
+        print(f"[auth] ✓ JWKS verification succeeded for sub={sub}")
+        return SupabaseUser(user_id=sub)
+
+    except HTTPException:
+        raise
     except jwt.ExpiredSignatureError as exc:
-        print(f"JWT ExpiredSignatureError: {str(exc)}")
+        print(f"[auth] Token expired: {exc}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token expired: {str(exc)}",
+            detail="Token expired",
         ) from exc
     except jwt.InvalidTokenError as exc:
-        print(f"JWT InvalidTokenError: {str(exc)}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid token: {str(exc)}",
-        ) from exc
-    except Exception as exc:
-        print(f"JWT Unknown Error: {str(exc)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Unknown error: {str(exc)}",
-        ) from exc
+        print(f"[auth] JWKS verification failed: {exc} — trying HS256 fallback")
+        # Fall through to HS256 fallback below
 
-    sub = payload.get("sub")
-    if not sub or not isinstance(sub, str):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token: missing subject",
-        )
-    return SupabaseUser(user_id=sub)
+    # ── Strategy 2: HS256 fallback (legacy Supabase with JWT secret) ─────────
+    if settings.supabase_jwt_secret:
+        try:
+            payload = jwt.decode(
+                token,
+                settings.supabase_jwt_secret,
+                algorithms=["HS256"],
+                **decode_opts,
+            )
+            sub = payload.get("sub")
+            if not sub or not isinstance(sub, str):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token: missing subject",
+                )
+            print(f"[auth] ✓ HS256 fallback verification succeeded for sub={sub}")
+            return SupabaseUser(user_id=sub)
+        except jwt.ExpiredSignatureError as exc:
+            print(f"[auth] HS256 fallback: Token expired: {exc}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token expired",
+            ) from exc
+        except jwt.InvalidTokenError as exc:
+            print(f"[auth] HS256 fallback also failed: {exc}")
+            # Fall through to final reject
+
+    # Both strategies failed
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid token: signature verification failed",
+    )
