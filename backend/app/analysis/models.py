@@ -10,6 +10,8 @@ class NormalizedTransaction(TypedDict, total=False):
     balance_after: float | None
     merchant_raw: str
     merchant_clean: str
+    transaction_type: Literal["transfer", "refund", "charge", "fee", "interest", "tax", "purchase", "unknown"]
+    state: Literal["extracted", "normalized", "validated", "reconciled", "conflicted", "excluded"]
     category: str
     sub_category: str
     description: str

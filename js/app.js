@@ -230,13 +230,13 @@
     fd.append("file", file);
 
     const steps = [
-      [15, "Sending to AI engine…"],
-      [30, "Gemini is reading your statement…"],
-      [50, "Extracting all transactions, detecting currency…"],
-      [65, "Categorizing expenses, detecting patterns…"],
-      [78, "Running reconciliation engine…"],
-      [88, "Generating verified financial report…"],
-      [94, "AI analyst writing summary…"],
+      [15, "Connecting to local ledger engine…"],
+      [30, "Lens-Flow AI is securely validating your document…"],
+      [50, "Extracting structured schemas and running balance anchors…"],
+      [65, "Resolving merchant rails into deterministic states…"],
+      [78, "Executing strict multi-pass algebraic reconciliation…"],
+      [88, "Cross-verifying ledger compliance and anomalies…"],
+      [94, "Finalizing Fintech-Grade validation payload…"],
     ];
     let idx = 0;
     const stepTimer = setInterval(() => {

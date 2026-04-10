@@ -118,7 +118,7 @@ def normalize_transaction_row(row: dict[str, Any]) -> NormalizedTransaction | No
     category_ai = str(row.get("category") or row.get("category_suggestion") or "Other").strip() or "Other"
     sub_category_ai = str(row.get("sub_category") or "").strip()
     
-    from app.analysis.classification import apply_classification_overrides
+    from app.analysis.classification import apply_classification_overrides, determine_transaction_type
     merchant_clean, category, sub_category = apply_classification_overrides(
         merchant_raw, merchant_clean, category_ai, sub_category_ai
     )
@@ -126,6 +126,8 @@ def normalize_transaction_row(row: dict[str, Any]) -> NormalizedTransaction | No
     payment = str(row.get("payment_method") or "").strip()
     if not payment:
         payment = _infer_payment_method(merchant_clean, description)
+        
+    transaction_type = determine_transaction_type(f"{merchant_raw} {description}")
 
     return NormalizedTransaction(
         date=date_s,
@@ -134,6 +136,8 @@ def normalize_transaction_row(row: dict[str, Any]) -> NormalizedTransaction | No
         balance_after=_to_amount(row.get("balance_after")) if row.get("balance_after") is not None else None,
         merchant_raw=merchant_raw or merchant_clean,
         merchant_clean=merchant_clean,
+        transaction_type=transaction_type, # type: ignore[arg-type]
+        state="normalized",
         category=category[:80],
         sub_category=sub_category[:80],
         description=description,

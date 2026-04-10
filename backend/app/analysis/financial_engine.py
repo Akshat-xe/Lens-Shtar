@@ -224,7 +224,16 @@ def run_financial_engine(
                     if t.get("flow") != correct_flow:
                         t["flow"] = correct_flow
                         flow_overrides += 1
+                        t["state"] = "conflicted"  # We forcibly corrected it, meaning AI conflict
+                    else:
+                        t["state"] = "reconciled"  # Agrees perfectly with ledger math
+                else:
+                    t["state"] = "conflicted" # Row exists but math does not align with delta
+            else:
+                t["state"] = "validated" # We have a balance, but couldn't check delta (e.g., first row)
             prev_bal = bal
+        else:
+            t["state"] = "validated" # Can't do running balance check, but parsed successfully
 
     for t in transactions:
         amt = _d(t["amount"])
@@ -330,6 +339,8 @@ def run_financial_engine(
             "is_investment": bool(t.get("is_investment")),
             "is_insurance": bool(t.get("is_insurance")),
             "stress_flag": bool(t.get("stress_flag")),
+            "state": t.get("state"),
+            "transaction_type": t.get("transaction_type", "unknown"),
         }
         for t in sorted(transactions, key=lambda x: x["date"], reverse=True)
     ]

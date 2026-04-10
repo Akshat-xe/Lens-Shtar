@@ -98,17 +98,33 @@ async def run_upload_pipeline(
 
     engine_out = run_financial_engine(normalized, gemini_meta=gemini_meta)
     leaks = detect_money_leaks(normalized, engine_out.get("recurring", []))
-    suggestions = build_savings_suggestions(
-        engine_out["kpis"],
-        engine_out["charts"]["category_breakdown"],
-        leaks,
-        engine_out["kpis"].get("upi_spend", 0.0),
-        engine_out.get("behavioral_insights") or {},
-    )
+    recon_status = engine_out.get("reconciliation", {}).get("status", "mismatch")
+    
+    if recon_status == "verified":
+        suggestions = build_savings_suggestions(
+            engine_out["kpis"],
+            engine_out["charts"]["category_breakdown"],
+            leaks,
+            engine_out["kpis"].get("upi_spend", 0.0),
+            engine_out.get("behavioral_insights") or {},
+        )
+    else:
+        # Insight Gating: Do not generate smart generic savings if the ledger is broken
+        suggestions = {
+            "quick_wins": [{
+                "title": "⚠️ Ledger Reconciliation Failed",
+                "detail": "Actionable insights are paused because the extracted transactions do not mathematically match the statement totals. Please review the highlighted conflicts.",
+                "bucket": "System Alert"
+            }],
+            "monthly_optimization": [],
+            "long_term": []
+        }
 
     ai_summary: str | None = None
     ai_summary_error: str | None = None
-    if include_ai_summary and settings.gemini_ai_summary_enabled:
+    
+    # Insight Gating: Only run the LLM narrative if the data is structurally verified
+    if include_ai_summary and settings.gemini_ai_summary_enabled and recon_status == "verified":
         facts = build_summary_facts(engine_out)
         try:
             ai_summary = await generate_ai_summary(api_key, facts, settings)

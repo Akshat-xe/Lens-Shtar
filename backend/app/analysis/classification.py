@@ -45,3 +45,26 @@ def apply_classification_overrides(
             break
             
     return clean_name, cat, sub
+
+def determine_transaction_type(blob: str, current_type: str = "unknown") -> str:
+    """
+    Strips the implicit rail/type out of the merchant name so it can be tracked separately.
+    Returns: transfer, refund, charge, fee, interest, tax, purchase, unknown
+    """
+    blob = blob.lower()
+    if "refund" in blob or "reversal" in blob or "cashback" in blob or "returned" in blob:
+        return "refund"
+    if "tax" in blob or "cgst" in blob or "sgst" in blob or "igst" in blob:
+        return "tax"
+    if "interest" in blob:
+        return "interest"
+    if "fee" in blob or "charge" in blob or "penalty" in blob or "bounce" in blob or "overdraft" in blob:
+        return "fee"
+    if "neft" in blob or "imps" in blob or "rtgs" in blob or "upi" in blob or "transfer" in blob or "sweep" in blob or "ft-" in blob:
+        return "transfer"
+    
+    # If we get here, it's likely standard commercial activity or ATM
+    if "atm" in blob or "cash" in blob or "pos" in blob or "purchase" in blob:
+        return "purchase"
+        
+    return "purchase" if current_type == "unknown" else current_type
