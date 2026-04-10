@@ -107,7 +107,7 @@ From the project root:
 bash start_all.sh
 ```
 
-Then open `frontend/index.html` or use the browser URL shown by the local server.
+Then open `lens-flow.shtar.space` or use the browser URL shown by the local server.
 
 ---
 
