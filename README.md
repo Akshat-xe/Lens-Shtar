@@ -104,9 +104,7 @@ lens-shtar/
 From the project root:
 
 ```bash
-cd frontend
-npm install
-npm start
+bash start_all.sh
 ```
 
 Then open `frontend/index.html` or use the browser URL shown by the local server.
