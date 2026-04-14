@@ -9,7 +9,7 @@
   <img width="12" />
   <img src="https://raw.githubusercontent.com/tandpfun/skill-icons/main/icons/JavaScript.svg" height="40" alt="javascript logo"  />
 </div>
-
+ 
 <h1 align="center">Lens Shtar</h1>
 <p align="center">
   <strong>A Fintech Grade Financial Intelligence Engine</strong><br>
