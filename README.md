@@ -14,7 +14,7 @@
 
 ---
 
-Your transactions are scattered across UPI apps, cards, wallets, and subscriptions — making it nearly impossible to know where your money actually goes. Lens Shtar solves this by pulling everything together and presenting a single, clean, plain-language picture of your spending.
+Your transactions are scattered across UPI apps, cards, wallets, and subscriptions — making it nearly impossible to know where your money actually goes. Lens Shtar pulls everything together and presents a single, clean, plain-language picture of your spending.
 
 Built with a deterministic financial engine that ensures mathematical accuracy before surfacing any insight — fintech-grade precision, zero guesswork.
 
@@ -33,10 +33,6 @@ Built with a deterministic financial engine that ensures mathematical accuracy b
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)
 ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
-
-## Run Locally
-
-Clone the repo, install Python dependencies from `requirements.txt`, start the backend server, then open `index.html` in your browser.
 
 ---
 
