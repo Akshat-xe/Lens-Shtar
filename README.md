@@ -1,102 +1,43 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/tandpfun/skill-icons/main/icons/Python-Dark.svg" height="40" alt="python logo"  />
-  <img width="12" />
-  <img src="https://raw.githubusercontent.com/tandpfun/skill-icons/main/icons/FastAPI.svg" height="40" alt="fastapi logo"  />
-  <img width="12" />
-  <img src="https://raw.githubusercontent.com/tandpfun/skill-icons/main/icons/HTML.svg" height="40" alt="html5 logo"  />
-  <img width="12" />
-  <img src="https://raw.githubusercontent.com/tandpfun/skill-icons/main/icons/CSS.svg" height="40" alt="css3 logo"  />
-  <img width="12" />
-  <img src="https://raw.githubusercontent.com/tandpfun/skill-icons/main/icons/JavaScript.svg" height="40" alt="javascript logo"  />
+
+# 🔍 Lens Shtar
+
+**Finally see where your money actually goes — one clear view, no confusion.**
+
+<br/>
+
+<a href="https://lens.shtar.space" target="_blank" rel="noopener noreferrer">
+  <img src="https://img.shields.io/badge/OPEN_LIVE_SITE-Visit_Now_%E2%86%97-16a34a?style=for-the-badge&logo=googlechrome&logoColor=white&labelColor=0d1117" alt="Open Live Site" />
+</a>
+
 </div>
- 
-<h1 align="center">Lens Shtar</h1>
-<p align="center">
-  <strong>A Fintech Grade Financial Intelligence Engine</strong><br>
-  Engineered by <strong>Akshat Kumar</strong>
-</p>
-
-## 🌌 The Problem Space
-
-**Why do people struggle to track where their money goes each month?**
-
-In today's fragmented financial landscape, individuals frequently lose control over their spending. Transactions are scattered across diverse channels—UPI apps, credit/debit cards, digital wallets, and overlapping subscriptions. The result? There is **no single, simplified view of everyday expenses** translated into plain, actionable language. 
-
-### Opportunity Metrics
-| Metric | Score (out of 10) | Description |
-| :--- | :---: | :--- |
-| **Severity Score** | `8.0` | High pain point for users managing multiple fragmented accounts. |
-| **TAM Score** | `10.0` | Total Addressable Market spans almost all active digital spenders. |
-| **Whitespace Score** | `8.0` | Existing solutions are often overwhelming, inaccurate, or lack deterministic insights. |
-| **Frequency Score** | `8.0` | Daily transactions lead to continuous relevance. |
-| **🔥 ITCH SCORE** | `90.5` | **Critical need for a unified, secure, intelligent solution.** |
 
 ---
 
-## 🚀 How We Solved It
+Your transactions are scattered across UPI apps, cards, wallets, and subscriptions — making it nearly impossible to know where your money actually goes. Lens Shtar solves this by pulling everything together and presenting a single, clean, plain-language picture of your spending.
 
-Lens Shtar tackles this problem head-on through a meticulously designed deterministic pipeline. Rather than dumping raw transaction data into a black-box LLM (which often leads to hallucinations and incorrect math), Lens Shtar relies on a **strict Python-based rule engine**.
+Built with a deterministic financial engine that ensures mathematical accuracy before surfacing any insight — fintech-grade precision, zero guesswork.
 
-### 1. The Ledger-Truth Engine
-All financial flows are subjected to rigorous mathematical verification. We ensure a foundational "ledger truth" that guarantees 100% accuracy in balances, debits, and credits before any analysis is allowed to happen.
+| Metric | Score |
+|:---|:---:|
+| Problem Severity | 8 / 10 |
+| Market Opportunity | 10 / 10 |
+| Whitespace | 8 / 10 |
+| Daily Relevance | 8 / 10 |
+| **Itch Score** | **90.5** |
 
-### 2. Transaction State Machine & Cleansing
-Data flows through a multi-stage validation pipeline:
-*   **Ingestion:** Support for banking PDFs (parsed securely via `pdfplumber`/`PyPDF2`) and Excel sheets to handle any bank format.
-*   **Normalization:** Merchant names and transaction locations are intelligently isolated from the noisy transaction rails (e.g., removing arbitrary bank codes, terminal IDs).
-*   **Classification:** Rules-based classification assigns transactions into logical categories that reflect reality.
+## Built With
 
-### 3. Human-Readable Insights
-Only after passing the rigorous reconciliation and deterministic engine constraints do we generate insights. This ensures **fintech-grade trust & data integrity**. The user is presented with beautifully rendered, unified, and easy-to-understand visualizations of their cash flow.
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
 
----
+## Run Locally
 
-## 🛠 Technologies & Workflow
-
-The architecture is built for extreme performance, security, and immediate responsiveness. We employ a decoupled SPA-to-API workflow ensuring a premium user experience.
-
-### System Architecture
-
-```mermaid
-graph TD
-    Client[Web Client: HTML/JS/CSS] -->|REST / JWT Auth| API(FastAPI Server)
-    API --> Ingest[Document Ingestion: PyPDF2/Pandas]
-    Ingest --> Engine[Deterministic Financial Engine]
-    Engine --> Ledger[Ledger-Truth Verification]
-    Ledger --> Classify[Merchant Normalization & Classification]
-    Classify --> Output[Plain Language Financial Intelligence]
-    Output --> API
-```
-
-*   **Frontend (Static Web):** Ultra-lightweight Vanilla DOM (JavaScript + HTML5/CSS3) for instant load times and native-like responsiveness. Served locally for rapid testing and performance.
-*   **Backend (Python + FastAPI):** A local-first, asynchronous backend layer optimized for speed and reliability. Built-in CORS and dependency injection.
-*   **Data Science & Parsing:** Heavy lifting powered by `Pandas`, `openpyxl`, `PyPDF2`, and `pdfplumber` to extract actionable rows from complex unstructured banking reports.
-*   **Security:** Cryptographically secure `PyJWT` authentication blocks ensuring data remains private and accurately tied to user sessions.
+Clone the repo, install Python dependencies from `requirements.txt`, start the backend server, then open `index.html` in your browser.
 
 ---
 
-## 📂 Project Structure
-
-A clean, modular layout guaranteeing zero overlap between presentational components and heavy data-processing scripts.
-
-```text
-lens-shtar/
-├── backend/                  # Fast & Secure Python API Layer
-│   ├── app/                  # Application core modules (Analysis, Pipeline, Validation)
-│   ├── requirements.txt      # Python dependencies
-│   ├── start.py              # Server entry point
-│   ├── .env                  # Environment configurations
-│   └── .venv/                # Isolated Virtual Environment
-├── css/                      # Premium, futuristic frontend styling
-├── js/                       # Vanilla frontend logic and API controllers
-├── index.html                # Single Page Application entry
-├── package.json              # Frontend server dependencies (live-server, serve)
-├── environment.yml           # Conda environment definition for deep compute tasks
-└── start_all.sh              # Single-command workflow initiation
-```
-
----
-
-<p align="center">
-  <em>“Empowering individuals with mathematical truth and financial clarity.”</em>
-</p>
+*Empowering individuals with mathematical truth and financial clarity.*
