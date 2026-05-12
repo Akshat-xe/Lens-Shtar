@@ -227,3 +227,5 @@ def detect_money_leaks(
         unique.append(L)
     unique.sort(key=lambda x: {"high": 0, "medium": 1, "low": 2}[x["severity"]])
     return unique[:30]
+
+# Patch 2.0.0

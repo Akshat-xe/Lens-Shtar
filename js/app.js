@@ -860,3 +860,5 @@
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
+// Patch 2.0.0

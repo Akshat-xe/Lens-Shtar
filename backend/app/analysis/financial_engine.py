@@ -487,3 +487,5 @@ def transaction_date_span(transactions: list[NormalizedTransaction]) -> tuple[st
         return None, None
     dates = [t["date"] for t in transactions]
     return min(dates), max(dates)
+
+# Patch 2.0.0

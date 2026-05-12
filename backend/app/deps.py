@@ -36,3 +36,5 @@ def require_session_api_key(user: Annotated[SupabaseUser, Depends(get_current_us
             detail="API key required",
         )
     return user
+
+# Patch 2.0.0

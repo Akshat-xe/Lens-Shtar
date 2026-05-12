@@ -204,3 +204,5 @@ class MissingApiKeyError(PipelineError):
 
 class BadInputError(PipelineError):
     pass
+
+# Patch 2.0.0

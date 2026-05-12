@@ -44,3 +44,5 @@ def owner_user_id(file_id: str) -> str | None:
             return None
         uid = row.get("_owner_user_id")
         return uid if isinstance(uid, str) else None
+
+# Patch 2.0.0

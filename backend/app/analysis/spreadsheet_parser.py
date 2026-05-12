@@ -152,3 +152,5 @@ def parse_excel(content: bytes, suffix: str) -> list[dict[str, Any]]:
         buf.seek(0)
         df = pd.read_excel(buf, sheet_name=0)
     return _rows_from_dataframe(df)
+
+# Patch 2.0.0

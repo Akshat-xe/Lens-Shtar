@@ -162,3 +162,5 @@ def rule_based_fallback_summary(transactions: list[NormalizedTransaction], kpis:
         f"{inv_note}{emi_note}{cash_note} "
         f"Review top spending categories and set category-wise monthly limits for better control."
     )
+
+# Patch 2.0.0

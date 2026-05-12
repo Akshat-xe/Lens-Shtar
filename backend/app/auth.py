@@ -117,3 +117,5 @@ def verify_supabase_jwt(token: str, settings: Settings) -> SupabaseUser:
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid token: signature verification failed",
     )
+
+# Patch 2.0.0

@@ -64,3 +64,5 @@ PORT="${PORT:-8000}"
 ok "Starting Lens Shtar backend on port $PORT …"
 echo ""
 RELOAD="${RELOAD:-false}" PORT="$PORT" python start.py
+
+# Patch 2.0.0

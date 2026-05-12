@@ -133,3 +133,5 @@ def dashboard(
             detail="Analysis not found for this id, or you do not have access.",
         )
     return data
+
+# Patch 2.0.0

@@ -160,3 +160,5 @@ def validate_and_normalize(raw_rows: list[dict[str, Any]]) -> list[NormalizedTra
     # We DO NOT arbitrarily deduplicate identical transactions on the same day anymore.
     # If the LLM saw multiple identical charges, we retain them.
     return parsed
+
+# Patch 2.0.0

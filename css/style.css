@@ -1356,3 +1356,4 @@ a {
   position: relative;
   height: clamp(260px, 26vw, 360px) !important;
 }
+/* Patch 2.0.0 */

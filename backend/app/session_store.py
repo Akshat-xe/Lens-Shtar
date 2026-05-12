@@ -97,3 +97,5 @@ def get_gemini_key(user_id: str) -> str | None:
         if not key or not isinstance(key, str):
             return None
         return key
+
+# Patch 2.0.0

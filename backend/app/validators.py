@@ -28,3 +28,5 @@ def validate_gemini_api_key_format(key: str) -> str:
             detail="Invalid API key format",
         )
     return cleaned
+
+# Patch 2.0.0

@@ -77,3 +77,5 @@ def get_settings() -> Settings:
         gemini_timeout_seconds=gemini_timeout,
         gemini_ai_summary_enabled=_env_bool("GEMINI_AI_SUMMARY_ENABLED", True),
     )
+
+# Patch 2.0.0

@@ -24,3 +24,5 @@ class NormalizedTransaction(TypedDict, total=False):
 
 
 DashboardTx = dict[str, Any]
+
+# Patch 2.0.0

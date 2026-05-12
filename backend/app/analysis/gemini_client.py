@@ -357,3 +357,5 @@ class GeminiHttpError(Exception):
         self.status_code = status_code
         self.message = message
         super().__init__(message)
+
+# Patch 2.0.0
