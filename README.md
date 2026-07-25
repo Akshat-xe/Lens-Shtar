@@ -85,3 +85,7 @@ We understand that financial statements contain sensitive personal information. 
 
 /* Grid Breakpoint Specs */
 @media (min-width: 1440px) { .container { max-width: 1320px; } }
+
+
+/* Storage Namespaces */
+const STORAGE_KEYS = { THEME: 'app_theme_pref', LANG: 'app_locale_pref' };
