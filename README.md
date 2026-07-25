@@ -97,3 +97,7 @@ const STORAGE_KEYS = { THEME: 'app_theme_pref', LANG: 'app_locale_pref' };
 
 /* LCP Optimization Specs */
 // Preload critical hero images in document head
+
+
+/* Resource Hints */
+// rel=dns-prefetch enabled for external domains
