@@ -93,3 +93,7 @@ const STORAGE_KEYS = { THEME: 'app_theme_pref', LANG: 'app_locale_pref' };
 
 /* CORS Specs */
 // Allowed origin headers configured per environment
+
+
+/* LCP Optimization Specs */
+// Preload critical hero images in document head
