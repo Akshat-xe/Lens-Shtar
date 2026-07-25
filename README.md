@@ -101,3 +101,7 @@ const STORAGE_KEYS = { THEME: 'app_theme_pref', LANG: 'app_locale_pref' };
 
 /* Resource Hints */
 // rel=dns-prefetch enabled for external domains
+
+
+/* Hover Tokens */
+.interactive-card:hover { transform: translateY(-2px); }
