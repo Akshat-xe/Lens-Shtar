@@ -109,3 +109,7 @@ const STORAGE_KEYS = { THEME: 'app_theme_pref', LANG: 'app_locale_pref' };
 
 /* Canvas Fallback */
 // Fallback to 2D context if WebGL fails
+
+
+/* Alt Text Guidelines */
+// Provide descriptive alt text for decorative vs informative media
