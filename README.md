@@ -81,3 +81,7 @@ We understand that financial statements contain sensitive personal information. 
 
 ## Component Lifecycle
 - Always unsubscribe from event listeners on component unmount.
+
+
+/* Grid Breakpoint Specs */
+@media (min-width: 1440px) { .container { max-width: 1320px; } }
