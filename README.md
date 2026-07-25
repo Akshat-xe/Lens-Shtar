@@ -77,3 +77,7 @@ We understand that financial statements contain sensitive personal information. 
 
 ## Responsive Breakpoints
 - Mobile (< 640px), Tablet (640px - 1024px), Desktop (> 1024px).
+
+
+## Component Lifecycle
+- Always unsubscribe from event listeners on component unmount.
