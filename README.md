@@ -69,3 +69,7 @@ We understand that financial statements contain sensitive personal information. 
   <i>Empowering individuals with mathematical truth, financial clarity, and absolute privacy.</i><br/>
   <b>Lens Shtar · Ever Shtar Product Suite</b>
 </div>
+
+
+## Environment Variables
+- `NODE_ENV`: Runtime environment (`development` / `production`).
