@@ -89,3 +89,7 @@ We understand that financial statements contain sensitive personal information. 
 
 /* Storage Namespaces */
 const STORAGE_KEYS = { THEME: 'app_theme_pref', LANG: 'app_locale_pref' };
+
+
+/* CORS Specs */
+// Allowed origin headers configured per environment
