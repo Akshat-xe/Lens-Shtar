@@ -73,3 +73,7 @@ We understand that financial statements contain sensitive personal information. 
 
 ## Environment Variables
 - `NODE_ENV`: Runtime environment (`development` / `production`).
+
+
+## Responsive Breakpoints
+- Mobile (< 640px), Tablet (640px - 1024px), Desktop (> 1024px).
